@@ -7,7 +7,7 @@ interface HeaderProps {
 export const Header = ({ onLogout }: HeaderProps) => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-white px-[10.8px] py-[7.2px] shadow-sm z-50">
-      <div className="w-full flex items-center justify-between">
+      <div className="w-full flex items-center justify-between m-0">
         <div className="flex items-center gap-[3.6px]">
           <img
             src="/nfl_brand_logo.png"
