@@ -19,46 +19,51 @@ NFL Web Application built with React, TypeScript, Vite, and Electron.
 
 ## Development
 
+### Web Version
 ```bash
 npm run dev
 ```
 
-## Build
-
+### Electron Version
 ```bash
-npm run build
-```
-
-## Electron
-
-### Розробка
-```bash
-# Термінал 1: запуск Vite dev server
-npm run dev
-
-# Термінал 2: запуск Electron
 npm run electron:dev
 ```
 
-### Запуск зібраного додатку
+This will:
+1. Build the Electron preload scripts
+2. Start the Vite dev server
+3. Launch Electron when the server is ready
+
+## Build
+
+### Web Version
 ```bash
 npm run build
-npm run electron:start
 ```
 
-### Збірка exe файлу для Windows
+### Electron Version
 ```bash
-npm run build:exe
+npm run electron:build
 ```
 
-Після збірки exe файл буде в папці `release/`:
-- `NFL Web App-Setup-1.0.0.exe` - інсталятор для Windows
+## Database
 
-### Створення іконок
+The application uses:
+- **SQLite** (via better-sqlite3) when running in Electron
+- **IndexedDB** when running in a web browser
 
-Для правильної збірки додайте іконки в папку `build/`:
-- `icon.ico` - для Windows (256x256 або більше)
-- `icon.icns` - для macOS
-- `icon.png` - для Linux (512x512)
+Data is automatically saved to the appropriate database based on the environment.
 
-Якщо іконки відсутні, electron-builder створить дефолтні.
+## Project Structure
+
+```
+├── electron/          # Electron main process files
+│   ├── main.ts       # Main Electron process
+│   └── preload.ts    # Preload script for IPC
+├── src/              # React application
+│   ├── components/   # React components
+│   ├── pages/        # Page components
+│   ├── utils/        # Utility functions (database, etc.)
+│   └── types/        # TypeScript type definitions
+└── public/           # Static assets
+```
