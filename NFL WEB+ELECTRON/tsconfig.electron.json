@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "./dist-electron",
+    "noEmit": false,
+    "module": "ESNext",
+    "target": "ES2023",
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "verbatimModuleSyntax": false
+  },
+  "include": ["electron.ts", "preload.ts"],
+  "exclude": ["node_modules", "dist", "dist-electron"]
+}
+

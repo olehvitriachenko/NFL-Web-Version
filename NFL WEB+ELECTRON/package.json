@@ -3,12 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/electron.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsc -p tsconfig.electron.json",
+    "electron:dev": "tsc -p tsconfig.electron.json && wait-on http://localhost:5173 && electron .",
+    "electron:start": "electron .",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "electron": "electron ."
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.143.6",
@@ -28,6 +30,7 @@
     "@eslint/js": "^9.39.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/crypto-js": "^4.2.2",
+    "@types/electron": "^1.6.10",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
@@ -39,7 +42,9 @@
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
+    "tsx": "^4.19.2",
     "typescript": "~5.9.3",
+    "wait-on": "^8.0.1",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^1.2.0"

@@ -71,3 +71,48 @@ export default defineConfig([
   },
 ])
 ```
+
+## Electron Setup
+
+Цей проєкт налаштований для роботи з Electron.
+
+### Розробка
+
+1. Запустіть Vite dev server в одному терміналі:
+```bash
+npm run dev
+```
+
+2. В іншому терміналі запустіть Electron:
+```bash
+npm run electron:dev
+```
+
+Скрипт `electron:dev` автоматично зкомпілює Electron файли та зачекає, поки Vite сервер буде готовий.
+
+### Збірка
+
+Для production збірки:
+```bash
+npm run build
+```
+
+Після збірки запустіть Electron:
+```bash
+npm run electron:start
+```
+
+### Структура Electron файлів
+
+- `electron.ts` - головний процес Electron
+- `preload.ts` - preload скрипт для безпечної комунікації між процесами
+- `dist-electron/` - зкомпільовані файли Electron (генерується автоматично)
+
+### API
+
+У рендер-процесі доступний об'єкт `window.electron` з наступним API:
+
+```typescript
+window.electron.platform // Платформа (darwin, win32, linux)
+window.electron.versions // Версії Node.js, Chrome, Electron
+```
