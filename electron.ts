@@ -22,7 +22,7 @@ function createWindow() {
       contextIsolation: true,
       preload: join(__dirname, 'preload.js'),
     },
-    icon: join(__dirname, '..', 'public', 'vite.svg'),
+    // icon: join(__dirname, 'public', 'vite.svg'), // Додайте іконку за потреби
   });
 
   // Завантажуємо додаток

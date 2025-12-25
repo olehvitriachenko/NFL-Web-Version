@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router';
 import { Header } from '../components/Header';
 import { MenuButton } from '../components/MenuButton';
 import { OfflineIndicator } from '../components/OfflineIndicator';
@@ -9,16 +10,20 @@ import {
   FiFile,
 } from 'react-icons/fi';
 
-interface HomePageProps {
-  onNavigate: (page: string) => void;
-  onLogout?: () => void;
-}
+export const HomePage = () => {
+  const navigate = useNavigate();
 
-export const HomePage = ({ onNavigate, onLogout }: HomePageProps) => {
+  const handleLogout = () => {
+    // Очистити дані сесії (якщо є)
+    localStorage.removeItem('agentInfo');
+    // Перенаправити на сторінку логіну
+    navigate({ to: '/' });
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
       <OfflineIndicator />
-      <Header onLogout={onLogout} />
+      <Header onLogout={handleLogout} />
       <div className="max-w-[600px] mx-auto px-6 py-8">
         <h1 className="text-[32px] font-bold text-[#1d1d1f] text-center mb-8">
           Welcome!
@@ -27,32 +32,32 @@ export const HomePage = ({ onNavigate, onLogout }: HomePageProps) => {
           <MenuButton
             icon={FiUser}
             label="Agent Info"
-            onClick={() => onNavigate('agent-info')}
+            onClick={() => navigate({ to: '/agent-info' })}
           />
           <MenuButton
             icon={FiMessageSquare}
             label="Quick Quote"
-            onClick={() => onNavigate('quick-quote')}
+            onClick={() => navigate({ to: '/quick-quote' })}
           />
           <MenuButton
             icon={FiMessageSquare}
             label="Quote life"
-            onClick={() => onNavigate('quote-life')}
+            onClick={() => navigate({ to: '/quote-life' })}
           />
           <MenuButton
             icon={FiMail}
             label="Quotes Mailbox"
-            onClick={() => onNavigate('quotes-mailbox')}
+            onClick={() => navigate({ to: '/quotes-mailbox' })}
           />
           <MenuButton
             icon={FiFileText}
             label="Illustration History"
-            onClick={() => onNavigate('illustration-history')}
+            onClick={() => navigate({ to: '/illustration-history' })}
           />
           <MenuButton
             icon={FiFile}
             label="Generate Mock PDF"
-            onClick={() => onNavigate('generate-pdf')}
+            onClick={() => navigate({ to: '/generate-pdf' })}
           />
         </div>
       </div>

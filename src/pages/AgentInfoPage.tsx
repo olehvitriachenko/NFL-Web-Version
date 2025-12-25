@@ -1,27 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
 import { FormField } from '../components/FormField';
 import { Button } from '../components/Button';
 import { OfflineIndicator } from '../components/OfflineIndicator';
+import type { AgentInfo } from '../types/agent';
 
-interface AgentInfoPageProps {
-  onBack: () => void;
-  onHome: () => void;
-  onSave?: (data: AgentInfo) => void;
-}
-
-export interface AgentInfo {
-  firstName: string;
-  lastName: string;
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  phone: string;
-  email: string;
-}
-
-export const AgentInfoPage = ({ onBack, onHome, onSave }: AgentInfoPageProps) => {
+export const AgentInfoPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<AgentInfo>({
     firstName: 'John',
     lastName: 'Doe (test account)',
@@ -43,15 +29,24 @@ export const AgentInfoPage = ({ onBack, onHome, onSave }: AgentInfoPageProps) =>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave?.(formData);
-    // Можна додати повідомлення про успішне збереження
+    // Зберегти дані
+    localStorage.setItem('agentInfo', JSON.stringify(formData));
+    console.log('Agent info saved:', formData);
     alert('Agent info saved!');
+  };
+
+  const handleBack = () => {
+    navigate({ to: '/' });
+  };
+
+  const handleHome = () => {
+    navigate({ to: '/' });
   };
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
       <OfflineIndicator />
-      <PageHeader title="Agent Info" onBack={onBack} onHome={onHome} />
+      <PageHeader title="Agent Info" onBack={handleBack} onHome={handleHome} />
       <div className="max-w-[600px] mx-auto px-6 py-6">
         <form
           onSubmit={handleSubmit}

@@ -1,4 +1,4 @@
-export interface AgentInfo {
+export type AgentInfo = {
   firstName: string;
   lastName: string;
   street: string;
@@ -7,5 +7,5 @@ export interface AgentInfo {
   zipCode: string;
   phone: string;
   email: string;
-}
+};
 
