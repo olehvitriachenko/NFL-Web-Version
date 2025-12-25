@@ -208,7 +208,7 @@ export const AgentInfoPage = () => {
             className="bg-white p-8 shadow-sm"
             style={{ borderRadius: 10 }}
           >
-            <div className="space-y-6">
+            <div className="flex flex-col gap-1">
               <FormField
                 label="First Name"
                 name="firstName"
@@ -275,30 +275,32 @@ export const AgentInfoPage = () => {
                 required
               />
             </div>
-            <div className="mt-8 pt-6 flex flex-col gap-4">
+            <div className="mt-8 pt-6 flex flex-col gap-1">
               <Button type="submit" fullWidth>
                 {editingId ? 'UPDATE' : 'SAVE'}
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                onClick={() => {
-                  setFormData({
-                    firstName: '',
-                    lastName: '',
-                    street: '',
-                    city: '',
-                    state: '',
-                    zipCode: '',
-                    phone: '',
-                    email: '',
-                  });
-                  setEditingId(null);
-                }}
-              >
-                ADD ANOTHER AGENT
-              </Button>
+              {agents.length > 0 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => {
+                    setFormData({
+                      firstName: '',
+                      lastName: '',
+                      street: '',
+                      city: '',
+                      state: '',
+                      zipCode: '',
+                      phone: '',
+                      email: '',
+                    });
+                    setEditingId(null);
+                  }}
+                >
+                  ADD ANOTHER AGENT
+                </Button>
+              )}
             </div>
           </form>
         </div>
