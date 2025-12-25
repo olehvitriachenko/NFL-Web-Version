@@ -4,11 +4,13 @@
     "outDir": "./dist-electron",
     "rootDir": ".",
     "noEmit": false,
-    "module": "ESNext",
+    "module": "CommonJS",
     "target": "ES2023",
     "moduleResolution": "node",
     "allowImportingTsExtensions": false,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": ["electron/**/*.ts"],
   "exclude": ["node_modules", "dist", "dist-electron"]

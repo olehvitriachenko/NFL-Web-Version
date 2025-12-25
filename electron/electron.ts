@@ -1,9 +1,5 @@
 import { app, BrowserWindow } from 'electron';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { join } from 'path';
 
 // Зберігаємо глобальну посилання на вікно, щоб воно не було знищене збирачем сміття
 let mainWindow: BrowserWindow | null = null;
@@ -21,7 +17,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: join(__dirname, 'preload.js'),
+      preload: join(__dirname, 'preload.cjs'),
       webSecurity: true,
       allowRunningInsecureContent: false,
     },
