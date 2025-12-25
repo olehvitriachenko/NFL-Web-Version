@@ -1,0 +1,25 @@
+.home-page {
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+.home-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-lg);
+}
+
+.welcome-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+

@@ -1,0 +1,23 @@
+.agent-info-page {
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+.page-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.agent-form {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-actions {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+}
+
