@@ -17,12 +17,25 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    show: false, // Не показуємо вікно поки воно не готове
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: join(__dirname, 'preload.js'),
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
     // icon: join(__dirname, 'public', 'vite.svg'), // Додайте іконку за потреби
+  });
+
+  // Показуємо вікно коли воно готове
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
+    
+    // Фокус на вікно (корисно на macOS)
+    if (isDev) {
+      mainWindow?.focus();
+    }
   });
 
   // Завантажуємо додаток
@@ -39,6 +52,11 @@ function createWindow() {
   // Емітується коли вікно закривається
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Обробка помилок завантаження
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
   });
 }
 
@@ -64,5 +82,24 @@ app.on('window-all-closed', () => {
 // Обробка помилок
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
+});
+
+// Запобігання нових вікон (наприклад, від target="_blank")
+app.on('web-contents-created', (_event, contents) => {
+  // Запобігаємо відкриттю нових вікон
+  contents.setWindowOpenHandler(() => {
+    return { action: 'deny' };
+  });
+  
+  // Обробка навігації
+  contents.on('will-navigate', (navigationEvent, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    
+    if (isDev && parsedUrl.origin !== 'http://localhost:5173') {
+      navigationEvent.preventDefault();
+    } else if (!isDev && parsedUrl.origin !== 'file://') {
+      navigationEvent.preventDefault();
+    }
+  });
 });
 

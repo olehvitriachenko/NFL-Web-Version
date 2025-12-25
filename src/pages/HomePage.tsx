@@ -37,27 +37,27 @@ export const HomePage = () => {
           <MenuButton
             icon={FiMessageSquare}
             label="Quick Quote"
-            onClick={() => navigate({ to: '/quick-quote' })}
+            onClick={() => navigate({ to: '/quick-quote' as any })}
           />
           <MenuButton
             icon={FiMessageSquare}
             label="Quote life"
-            onClick={() => navigate({ to: '/quote-life' })}
+            onClick={() => navigate({ to: '/quote-life' as any })}
           />
           <MenuButton
             icon={FiMail}
             label="Quotes Mailbox"
-            onClick={() => navigate({ to: '/quotes-mailbox' })}
+            onClick={() => navigate({ to: '/quotes-mailbox' as any })}
           />
           <MenuButton
             icon={FiFileText}
             label="Illustration History"
-            onClick={() => navigate({ to: '/illustration-history' })}
+            onClick={() => navigate({ to: '/illustration-history' as any })}
           />
           <MenuButton
             icon={FiFile}
             label="Generate Mock PDF"
-            onClick={() => navigate({ to: '/generate-pdf' })}
+            onClick={() => navigate({ to: '/generate-pdf' as any })}
           />
         </div>
       </div>

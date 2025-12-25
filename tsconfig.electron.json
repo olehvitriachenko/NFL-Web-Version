@@ -2,6 +2,7 @@
   "extends": "./tsconfig.node.json",
   "compilerOptions": {
     "outDir": "./dist-electron",
+    "rootDir": ".",
     "noEmit": false,
     "module": "ESNext",
     "target": "ES2023",
@@ -9,7 +10,7 @@
     "allowImportingTsExtensions": false,
     "verbatimModuleSyntax": false
   },
-  "include": ["electron.ts", "preload.ts"],
+  "include": ["electron/**/*.ts"],
   "exclude": ["node_modules", "dist", "dist-electron"]
 }
 

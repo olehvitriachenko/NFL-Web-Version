@@ -1,5 +1,5 @@
 import { FiChevronRight } from 'react-icons/fi';
-import { ComponentType } from 'react';
+import type { ComponentType } from 'react';
 
 interface MenuButtonProps {
   icon: ComponentType<{ size?: number; className?: string }>;

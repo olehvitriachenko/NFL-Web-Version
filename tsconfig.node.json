@@ -22,5 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["vite.config.ts", "electron.ts", "preload.ts"]
+  "include": ["vite.config.ts", "electron/**/*.ts"]
 }
