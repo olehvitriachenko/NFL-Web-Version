@@ -35,4 +35,8 @@ contextBridge.exposeInMainWorld('electron', {
         tableExists: (tableName) => ipcRenderer.invoke('rates:tableExists', tableName),
         getTableRecordCount: (tableName) => ipcRenderer.invoke('rates:getTableRecordCount', tableName),
     },
+    pdf: {
+        generateFromHTML: (htmlContent, options) => ipcRenderer.invoke('pdf:generateFromHTML', htmlContent, options),
+        saveFile: (pdfBuffer, defaultFileName) => ipcRenderer.invoke('pdf:saveFile', pdfBuffer, defaultFileName),
+    },
 });

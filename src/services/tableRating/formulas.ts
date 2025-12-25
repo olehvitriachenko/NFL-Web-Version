@@ -3,7 +3,8 @@
  * Formulas for calculating premiums with table ratings and flat extras
  */
 
-import { calculatePremium, PolicyInfo, PremiumResult } from '../premiumCalculating';
+import { calculatePremium } from '../premiumCalculating';
+import type { PolicyInfo, PremiumResult } from '../premiumCalculating';
 import { calculateBasePremium } from '../premiumCalculating/premiumCalculator';
 import { getRiskRatingFactor, getRate, getTermRate } from '../premiumCalculating/queries';
 import { getControlCode, isTermProduct } from '../premiumCalculating/controlCodes';

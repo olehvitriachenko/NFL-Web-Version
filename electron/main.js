@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { writeFile } from 'fs/promises';
 import { SQLiteDatabase } from './database.js';
 import { RatesDatabase } from './rates-database.js';
 const __filename = fileURLToPath(import.meta.url);
@@ -361,5 +362,71 @@ ipcMain.handle('rates:getTableRecordCount', async (_, tableName) => {
     catch (error) {
         console.error('Error getting table record count:', error);
         return { success: false, error: String(error), data: 0 };
+    }
+});
+// IPC handler for PDF generation
+ipcMain.handle('pdf:generateFromHTML', async (_, htmlContent, options) => {
+    try {
+        // Create a hidden window for rendering HTML
+        const pdfWindow = new BrowserWindow({
+            show: false,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+            },
+        });
+        // Load HTML content
+        await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+        // Wait for content to load
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Generate PDF with options
+        const pdfOptions = {
+            pageSize: options?.pageSize || 'A4',
+            printBackground: options?.printBackground !== false,
+            landscape: options?.landscape || false,
+        };
+        // Handle margins
+        if (options?.margins) {
+            pdfOptions.marginsType = 2; // Custom margins
+            pdfOptions.margins = {
+                top: options.margins.top || 0,
+                bottom: options.margins.bottom || 0,
+                left: options.margins.left || 0,
+                right: options.margins.right || 0,
+            };
+        }
+        else {
+            pdfOptions.marginsType = 0; // No margins
+        }
+        const pdfBuffer = await pdfWindow.webContents.printToPDF(pdfOptions);
+        // Close the window
+        pdfWindow.close();
+        return { success: true, data: pdfBuffer };
+    }
+    catch (error) {
+        console.error('Error generating PDF:', error);
+        return { success: false, error: String(error) };
+    }
+});
+// IPC handler for saving PDF file
+ipcMain.handle('pdf:saveFile', async (_, pdfBuffer, defaultFileName) => {
+    try {
+        const { canceled, filePath } = await dialog.showSaveDialog({
+            title: 'Save PDF',
+            defaultPath: defaultFileName || 'document.pdf',
+            filters: [
+                { name: 'PDF Files', extensions: ['pdf'] },
+                { name: 'All Files', extensions: ['*'] },
+            ],
+        });
+        if (canceled || !filePath) {
+            return { success: false, error: 'Save dialog canceled' };
+        }
+        await writeFile(filePath, pdfBuffer);
+        return { success: true, filePath };
+    }
+    catch (error) {
+        console.error('Error saving PDF file:', error);
+        return { success: false, error: String(error) };
     }
 });

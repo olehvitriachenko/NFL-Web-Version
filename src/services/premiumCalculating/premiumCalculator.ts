@@ -4,12 +4,14 @@
  */
 
 import {
-  PolicyInfo,
-  PremiumResult,
   Gender,
   SmokingStatus,
   PaymentMode,
   RIDER_CONTROL_CODES,
+} from './types';
+import type {
+  PolicyInfo,
+  PremiumResult,
 } from './types';
 import { getControlCode, isTermProduct, validateControlCodeParams } from './controlCodes';
 import {

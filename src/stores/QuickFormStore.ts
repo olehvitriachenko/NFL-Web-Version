@@ -4,6 +4,8 @@ import {
   PaymentMode,
   PaymentMethod,
   ProductType,
+} from '../services/premiumCalculating';
+import type {
   PolicyInfo
 } from '../services/premiumCalculating';
 import { getTablePremium } from '../services/tableRating/formulas';
@@ -11,7 +13,8 @@ import { shortSex } from '../utils/shortSex';
 import { shortSmokingStatus } from '../utils/shortSmokingStatus';
 import { getProductShortCode } from '../utils/productCode';
 import { isTermProduct as checkIsTermProduct } from '../services/premiumCalculating/controlCodes';
-import { getRequiredExaminations, Requirement } from '../services/qualificationExaminations';
+import { getRequiredExaminations } from '../services/qualificationExaminations';
+import type { Requirement } from '../services/qualificationExaminations';
 import { Gender } from '../services/premiumCalculating/types';
 
 // Helper function to convert payment mode string to PaymentMode type

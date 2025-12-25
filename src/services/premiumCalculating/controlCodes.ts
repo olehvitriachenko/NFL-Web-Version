@@ -7,8 +7,6 @@ import {
   Gender,
   SmokingStatus,
   ProductType,
-  ControlCode,
-  ControlCodeSelector,
   PWL_CONTROL_CODES,
   LEGACY_TERM_10_CONTROL_CODES,
   LEGACY_TERM_20_CONTROL_CODES,
@@ -21,6 +19,10 @@ import {
   WSP_PARTICIPATING_CONTROL_CODES,
   WSP_TERM_CONTROL_CODES,
   RIDER_CONTROL_CODES
+} from './types';
+import type {
+  ControlCode,
+  ControlCodeSelector
 } from './types';
 
 // ==================== MAIN CONTROL CODE SELECTOR ====================
