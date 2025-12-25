@@ -10,17 +10,18 @@ interface MenuButtonProps {
 export const MenuButton = ({ icon: Icon, label, onClick }: MenuButtonProps) => {
   return (
     <button
-      className="w-full bg-white rounded-xl px-6 py-4 mb-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all text-left"
+      className="w-full bg-white px-9 py-6 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all text-left"
+      style={{ borderRadius: 10 }}
       onClick={onClick}
     >
-      <div className="flex items-center gap-4">
-        <div className="text-[#1e40af] flex-shrink-0">
-          <Icon size={24} />
+      <div className="flex items-center gap-6">
+        <div className="text-[#0D175C] flex-shrink-0">
+          <Icon size={36} />
         </div>
-        <span className="flex-1 text-base font-medium text-[#1d1d1f]">
+        <span className="flex-1 text-2xl font-medium text-[#000000]">
           {label}
         </span>
-        <FiChevronRight className="text-[#6e6e73] flex-shrink-0" size={20} />
+        <FiChevronRight className="text-gray-500 flex-shrink-0" size={30} />
       </div>
     </button>
   );

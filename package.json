@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron": "electron ."
+    "electron": "npm run preload:build && electron electron/main.js",
+    "electron:dev": "npm run preload:build && concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron electron/main.js\"",
+    "electron:build": "npm run build && npm run preload:build && electron-builder",
+    "preload:build": "tsc electron/preload.ts electron/main.ts --outDir electron --target ES2020 --module ESNext --moduleResolution node --esModuleInterop --skipLibCheck"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.143.6",
