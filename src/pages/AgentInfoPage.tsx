@@ -127,7 +127,7 @@ export const AgentInfoPage = () => {
   };
 
   const handleBack = () => {
-    navigate({ to: '/' });
+    window.history.back();
   };
 
   const handleHome = () => {

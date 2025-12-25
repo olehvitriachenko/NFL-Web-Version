@@ -1,12 +1,13 @@
-import type { AgentInfo } from '../types/agent';
+import type { AgentInfo } from "../types/agent";
 
 // Check if running in Electron
-const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
+const isElectron =
+  typeof window !== "undefined" && window.electron !== undefined;
 
 // IndexedDB wrapper for browser
 class IndexedDBStorage {
-  private dbName = 'nfl-db';
-  private storeName = 'agents';
+  private dbName = "nfl-db";
+  private storeName = "agents";
   private db: IDBDatabase | null = null;
 
   async init(): Promise<void> {
@@ -23,10 +24,10 @@ class IndexedDBStorage {
         const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(this.storeName)) {
           const objectStore = db.createObjectStore(this.storeName, {
-            keyPath: 'id',
+            keyPath: "id",
             autoIncrement: true,
           });
-          objectStore.createIndex('email', 'email', { unique: false });
+          objectStore.createIndex("email", "email", { unique: false });
         }
       };
     });
@@ -36,7 +37,7 @@ class IndexedDBStorage {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], 'readwrite');
+      const transaction = this.db!.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.add({
         ...agent,
@@ -48,11 +49,13 @@ class IndexedDBStorage {
     });
   }
 
-  async getAllAgents(): Promise<(AgentInfo & { id: number; createdAt: string })[]> {
+  async getAllAgents(): Promise<
+    (AgentInfo & { id: number; createdAt: string })[]
+  > {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], 'readonly');
+      const transaction = this.db!.transaction([this.storeName], "readonly");
       const store = transaction.objectStore(this.storeName);
       const request = store.getAll();
 
@@ -65,7 +68,7 @@ class IndexedDBStorage {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], 'readwrite');
+      const transaction = this.db!.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.delete(id);
 
@@ -78,7 +81,7 @@ class IndexedDBStorage {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], 'readwrite');
+      const transaction = this.db!.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.put({
         ...agent,
@@ -96,47 +99,49 @@ class IndexedDBStorage {
 class SQLiteStorage {
   async saveAgent(agent: AgentInfo): Promise<number> {
     if (!window.electron?.db) {
-      throw new Error('Electron IPC not available');
+      throw new Error("Electron IPC not available");
     }
 
     const result = await window.electron.db.saveAgent(agent);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to save agent');
+      throw new Error(result.error || "Failed to save agent");
     }
     return result.id as number;
   }
 
-  async getAllAgents(): Promise<(AgentInfo & { id: number; createdAt: string })[]> {
+  async getAllAgents(): Promise<
+    (AgentInfo & { id: number; createdAt: string })[]
+  > {
     if (!window.electron?.db) {
-      throw new Error('Electron IPC not available');
+      throw new Error("Electron IPC not available");
     }
 
     const result = await window.electron.db.getAllAgents();
     if (!result.success) {
-      throw new Error(result.error || 'Failed to get agents');
+      throw new Error(result.error || "Failed to get agents");
     }
     return result.data;
   }
 
   async deleteAgent(id: number): Promise<void> {
     if (!window.electron?.db) {
-      throw new Error('Electron IPC not available');
+      throw new Error("Electron IPC not available");
     }
 
     const result = await window.electron.db.deleteAgent(id);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to delete agent');
+      throw new Error(result.error || "Failed to delete agent");
     }
   }
 
   async updateAgent(id: number, agent: AgentInfo): Promise<void> {
     if (!window.electron?.db) {
-      throw new Error('Electron IPC not available');
+      throw new Error("Electron IPC not available");
     }
 
     const result = await window.electron.db.updateAgent(id, agent);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to update agent');
+      throw new Error(result.error || "Failed to update agent");
     }
   }
 }
@@ -159,7 +164,9 @@ class Database {
     return this.storage.saveAgent(agent);
   }
 
-  async getAllAgents(): Promise<(AgentInfo & { id: number; createdAt: string })[]> {
+  async getAllAgents(): Promise<
+    (AgentInfo & { id: number; createdAt: string })[]
+  > {
     return this.storage.getAllAgents();
   }
 
@@ -177,4 +184,3 @@ class Database {
 }
 
 export const db = new Database();
-

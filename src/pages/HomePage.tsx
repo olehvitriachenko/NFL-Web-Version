@@ -24,7 +24,7 @@ export const HomePage = () => {
     <div className="min-h-screen bg-[#f5f5f7] flex flex-col">
       <OfflineIndicator />
       <Header onLogout={handleLogout} />
-      <div className="flex-1 flex items-center justify-center pt-[79.2px]">
+      <div className="flex-1 flex items-center justify-center pt-[79.2px] m-0">
         <div className="max-w-[900px] w-full px-[15px] py-[22.5px]">
           <h1 className="text-[48px] font-bold text-[#000000] text-center mb-12">
             Welcome!
