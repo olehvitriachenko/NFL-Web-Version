@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { writeFile } from 'fs/promises';
 import { SQLiteDatabase } from './database.js';
 import { RatesDatabase } from './rates-database.js';
 
@@ -227,6 +228,230 @@ ipcMain.handle('rates:query', async (_, sql, params = []) => {
   } catch (error) {
     console.error('Error executing rates query:', error);
     return { success: false, error: String(error), data: [] };
+  }
+});
+
+ipcMain.handle('rates:getPlanRate', async (_, controlCode, age, gender, smokingStatus, paymentMethod) => {
+  try {
+    const results = ratesDatabase.getPlanRate(controlCode, age, gender, smokingStatus, paymentMethod);
+    return { success: true, data: results };
+  } catch (error) {
+    console.error('Error getting plan rate:', error);
+    return { success: false, error: String(error), data: [] };
+  }
+});
+
+ipcMain.handle('rates:getBasicRateByPlanCode', async (_, planCode, age, gender, smokingStatus) => {
+  try {
+    const rate = ratesDatabase.getBasicRateByPlanCode(planCode, age, gender, smokingStatus);
+    return { success: true, data: rate };
+  } catch (error) {
+    console.error('Error getting basic rate by plan code:', error);
+    return { success: false, error: String(error), data: null };
+  }
+});
+
+ipcMain.handle('rates:getBasicRateByPlanCodeAndAge', async (_, planCode, age) => {
+  try {
+    const rate = ratesDatabase.getBasicRateByPlanCodeAndAge(planCode, age);
+    return { success: true, data: rate };
+  } catch (error) {
+    console.error('Error getting basic rate by plan code and age:', error);
+    return { success: false, error: String(error), data: null };
+  }
+});
+
+ipcMain.handle('rates:getBasicRateByControlCode', async (_, controlCode) => {
+  try {
+    const rate = ratesDatabase.getBasicRateByControlCode(controlCode);
+    return { success: true, data: rate };
+  } catch (error) {
+    console.error('Error getting basic rate by control code:', error);
+    return { success: false, error: String(error), data: null };
+  }
+});
+
+ipcMain.handle('rates:getServiceFee', async (_, planCode, paymentMode, paymentMethod) => {
+  try {
+    const fee = ratesDatabase.getServiceFee(planCode, paymentMode, paymentMethod);
+    return { success: true, data: fee };
+  } catch (error) {
+    console.error('Error getting service fee:', error);
+    return { success: false, error: String(error), data: null };
+  }
+});
+
+ipcMain.handle('rates:getModeFactor', async (_, planCode, paymentMode, paymentMethod) => {
+  try {
+    const factor = ratesDatabase.getModeFactor(planCode, paymentMode, paymentMethod);
+    return { success: true, data: factor };
+  } catch (error) {
+    console.error('Error getting mode factor:', error);
+    return { success: false, error: String(error), data: null };
+  }
+});
+
+ipcMain.handle('rates:getPaidUpAdditionPremiumRates', async (_, planCode, sex, risk, minIssueAge, maxIssueAge) => {
+  try {
+    const rates = ratesDatabase.getPaidUpAdditionPremiumRates(planCode, sex, risk, minIssueAge, maxIssueAge);
+    return { success: true, data: rates };
+  } catch (error) {
+    console.error('Error getting paid-up addition premium rates:', error);
+    return { success: false, error: String(error), data: [] };
+  }
+});
+
+ipcMain.handle('rates:getPaidUpAdditionDividendRates', async (_, planCode, sex, risk, minIssueAge, maxIssueAge) => {
+  try {
+    const rates = ratesDatabase.getPaidUpAdditionDividendRates(planCode, sex, risk, minIssueAge, maxIssueAge);
+    return { success: true, data: rates };
+  } catch (error) {
+    console.error('Error getting paid-up addition dividend rates:', error);
+    return { success: false, error: String(error), data: [] };
+  }
+});
+
+ipcMain.handle('rates:getCashRates', async (_, planCode, sex, issueAge, risk) => {
+  try {
+    const rates = ratesDatabase.getCashRates(planCode, sex, issueAge, risk);
+    return { success: true, data: rates };
+  } catch (error) {
+    console.error('Error getting cash rates:', error);
+    return { success: false, error: String(error), data: [] };
+  }
+});
+
+ipcMain.handle('rates:getNSPRate', async (_, planCode, sex, issueAge, risk) => {
+  try {
+    const rate = ratesDatabase.getNSPRate(planCode, sex, issueAge, risk);
+    return { success: true, data: rate };
+  } catch (error) {
+    console.error('Error getting NSP rate:', error);
+    return { success: false, error: String(error), data: null };
+  }
+});
+
+ipcMain.handle('rates:getFaceAmountLimits', async (_, planCode) => {
+  try {
+    const limits = ratesDatabase.getFaceAmountLimits(planCode);
+    return { success: true, data: limits };
+  } catch (error) {
+    console.error('Error getting face amount limits:', error);
+    return { success: false, error: String(error), data: null };
+  }
+});
+
+ipcMain.handle('rates:getTableNames', async () => {
+  try {
+    const tables = ratesDatabase.getTableNames();
+    return { success: true, data: tables };
+  } catch (error) {
+    console.error('Error getting table names:', error);
+    return { success: false, error: String(error), data: [] };
+  }
+});
+
+ipcMain.handle('rates:tableExists', async (_, tableName) => {
+  try {
+    const exists = ratesDatabase.tableExists(tableName);
+    return { success: true, data: exists };
+  } catch (error) {
+    console.error('Error checking table existence:', error);
+    return { success: false, error: String(error), data: false };
+  }
+});
+
+ipcMain.handle('rates:getTableRecordCount', async (_, tableName) => {
+  try {
+    const count = ratesDatabase.getTableRecordCount(tableName);
+    return { success: true, data: count };
+  } catch (error) {
+    console.error('Error getting table record count:', error);
+    return { success: false, error: String(error), data: 0 };
+  }
+});
+
+// IPC handler for PDF generation
+ipcMain.handle('pdf:generateFromHTML', async (_, htmlContent: string, options?: {
+  margins?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  };
+  pageSize?: 'A4' | 'Letter' | 'Legal' | 'Tabloid' | 'Ledger' | 'A3' | 'A5' | 'A6';
+  landscape?: boolean;
+  printBackground?: boolean;
+}) => {
+  try {
+    // Create a hidden window for rendering HTML
+    const pdfWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    // Load HTML content
+    await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+    // Wait for content to load
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Generate PDF with options
+    const pdfOptions: any = {
+      pageSize: options?.pageSize || 'A4',
+      printBackground: options?.printBackground !== false,
+      landscape: options?.landscape || false,
+    };
+
+    // Handle margins
+    if (options?.margins) {
+      pdfOptions.marginsType = 2; // Custom margins
+      pdfOptions.margins = {
+        top: options.margins.top || 0,
+        bottom: options.margins.bottom || 0,
+        left: options.margins.left || 0,
+        right: options.margins.right || 0,
+      };
+    } else {
+      pdfOptions.marginsType = 0; // No margins
+    }
+
+    const pdfBuffer = await pdfWindow.webContents.printToPDF(pdfOptions);
+
+    // Close the window
+    pdfWindow.close();
+
+    return { success: true, data: pdfBuffer };
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// IPC handler for saving PDF file
+ipcMain.handle('pdf:saveFile', async (_, pdfBuffer: Buffer, defaultFileName?: string) => {
+  try {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Save PDF',
+      defaultPath: defaultFileName || 'document.pdf',
+      filters: [
+        { name: 'PDF Files', extensions: ['pdf'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, error: 'Save dialog canceled' };
+    }
+
+    await writeFile(filePath, pdfBuffer);
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Error saving PDF file:', error);
+    return { success: false, error: String(error) };
   }
 });
 

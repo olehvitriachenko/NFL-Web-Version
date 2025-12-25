@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as GeneratePdfRouteImport } from './routes/generate-pdf'
 import { Route as AgentInfoRouteImport } from './routes/agent-info'
 import { Route as IndexRouteImport } from './routes/index'
 
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneratePdfRoute = GeneratePdfRouteImport.update({
+  id: '/generate-pdf',
+  path: '/generate-pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentInfoRoute = AgentInfoRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent-info': typeof AgentInfoRoute
+  '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent-info': typeof AgentInfoRoute
+  '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agent-info': typeof AgentInfoRoute
+  '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agent-info' | '/home'
+  fullPaths: '/' | '/agent-info' | '/generate-pdf' | '/home'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agent-info' | '/home'
-  id: '__root__' | '/' | '/agent-info' | '/home'
+  to: '/' | '/agent-info' | '/generate-pdf' | '/home'
+  id: '__root__' | '/' | '/agent-info' | '/generate-pdf' | '/home'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentInfoRoute: typeof AgentInfoRoute
+  GeneratePdfRoute: typeof GeneratePdfRoute
   HomeRoute: typeof HomeRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generate-pdf': {
+      id: '/generate-pdf'
+      path: '/generate-pdf'
+      fullPath: '/generate-pdf'
+      preLoaderRoute: typeof GeneratePdfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent-info': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentInfoRoute: AgentInfoRoute,
+  GeneratePdfRoute: GeneratePdfRoute,
   HomeRoute: HomeRoute,
 }
 export const routeTree = rootRouteImport

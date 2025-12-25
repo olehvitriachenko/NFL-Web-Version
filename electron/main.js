@@ -223,3 +223,143 @@ ipcMain.handle('rates:query', async (_, sql, params = []) => {
         return { success: false, error: String(error), data: [] };
     }
 });
+ipcMain.handle('rates:getPlanRate', async (_, controlCode, age, gender, smokingStatus, paymentMethod) => {
+    try {
+        const results = ratesDatabase.getPlanRate(controlCode, age, gender, smokingStatus, paymentMethod);
+        return { success: true, data: results };
+    }
+    catch (error) {
+        console.error('Error getting plan rate:', error);
+        return { success: false, error: String(error), data: [] };
+    }
+});
+ipcMain.handle('rates:getBasicRateByPlanCode', async (_, planCode, age, gender, smokingStatus) => {
+    try {
+        const rate = ratesDatabase.getBasicRateByPlanCode(planCode, age, gender, smokingStatus);
+        return { success: true, data: rate };
+    }
+    catch (error) {
+        console.error('Error getting basic rate by plan code:', error);
+        return { success: false, error: String(error), data: null };
+    }
+});
+ipcMain.handle('rates:getBasicRateByPlanCodeAndAge', async (_, planCode, age) => {
+    try {
+        const rate = ratesDatabase.getBasicRateByPlanCodeAndAge(planCode, age);
+        return { success: true, data: rate };
+    }
+    catch (error) {
+        console.error('Error getting basic rate by plan code and age:', error);
+        return { success: false, error: String(error), data: null };
+    }
+});
+ipcMain.handle('rates:getBasicRateByControlCode', async (_, controlCode) => {
+    try {
+        const rate = ratesDatabase.getBasicRateByControlCode(controlCode);
+        return { success: true, data: rate };
+    }
+    catch (error) {
+        console.error('Error getting basic rate by control code:', error);
+        return { success: false, error: String(error), data: null };
+    }
+});
+ipcMain.handle('rates:getServiceFee', async (_, planCode, paymentMode, paymentMethod) => {
+    try {
+        const fee = ratesDatabase.getServiceFee(planCode, paymentMode, paymentMethod);
+        return { success: true, data: fee };
+    }
+    catch (error) {
+        console.error('Error getting service fee:', error);
+        return { success: false, error: String(error), data: null };
+    }
+});
+ipcMain.handle('rates:getModeFactor', async (_, planCode, paymentMode, paymentMethod) => {
+    try {
+        const factor = ratesDatabase.getModeFactor(planCode, paymentMode, paymentMethod);
+        return { success: true, data: factor };
+    }
+    catch (error) {
+        console.error('Error getting mode factor:', error);
+        return { success: false, error: String(error), data: null };
+    }
+});
+ipcMain.handle('rates:getPaidUpAdditionPremiumRates', async (_, planCode, sex, risk, minIssueAge, maxIssueAge) => {
+    try {
+        const rates = ratesDatabase.getPaidUpAdditionPremiumRates(planCode, sex, risk, minIssueAge, maxIssueAge);
+        return { success: true, data: rates };
+    }
+    catch (error) {
+        console.error('Error getting paid-up addition premium rates:', error);
+        return { success: false, error: String(error), data: [] };
+    }
+});
+ipcMain.handle('rates:getPaidUpAdditionDividendRates', async (_, planCode, sex, risk, minIssueAge, maxIssueAge) => {
+    try {
+        const rates = ratesDatabase.getPaidUpAdditionDividendRates(planCode, sex, risk, minIssueAge, maxIssueAge);
+        return { success: true, data: rates };
+    }
+    catch (error) {
+        console.error('Error getting paid-up addition dividend rates:', error);
+        return { success: false, error: String(error), data: [] };
+    }
+});
+ipcMain.handle('rates:getCashRates', async (_, planCode, sex, issueAge, risk) => {
+    try {
+        const rates = ratesDatabase.getCashRates(planCode, sex, issueAge, risk);
+        return { success: true, data: rates };
+    }
+    catch (error) {
+        console.error('Error getting cash rates:', error);
+        return { success: false, error: String(error), data: [] };
+    }
+});
+ipcMain.handle('rates:getNSPRate', async (_, planCode, sex, issueAge, risk) => {
+    try {
+        const rate = ratesDatabase.getNSPRate(planCode, sex, issueAge, risk);
+        return { success: true, data: rate };
+    }
+    catch (error) {
+        console.error('Error getting NSP rate:', error);
+        return { success: false, error: String(error), data: null };
+    }
+});
+ipcMain.handle('rates:getFaceAmountLimits', async (_, planCode) => {
+    try {
+        const limits = ratesDatabase.getFaceAmountLimits(planCode);
+        return { success: true, data: limits };
+    }
+    catch (error) {
+        console.error('Error getting face amount limits:', error);
+        return { success: false, error: String(error), data: null };
+    }
+});
+ipcMain.handle('rates:getTableNames', async () => {
+    try {
+        const tables = ratesDatabase.getTableNames();
+        return { success: true, data: tables };
+    }
+    catch (error) {
+        console.error('Error getting table names:', error);
+        return { success: false, error: String(error), data: [] };
+    }
+});
+ipcMain.handle('rates:tableExists', async (_, tableName) => {
+    try {
+        const exists = ratesDatabase.tableExists(tableName);
+        return { success: true, data: exists };
+    }
+    catch (error) {
+        console.error('Error checking table existence:', error);
+        return { success: false, error: String(error), data: false };
+    }
+});
+ipcMain.handle('rates:getTableRecordCount', async (_, tableName) => {
+    try {
+        const count = ratesDatabase.getTableRecordCount(tableName);
+        return { success: true, data: count };
+    }
+    catch (error) {
+        console.error('Error getting table record count:', error);
+        return { success: false, error: String(error), data: 0 };
+    }
+});
