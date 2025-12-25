@@ -9,11 +9,37 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as QuoteFormRouteImport } from './routes/quote-form'
+import { Route as QuoteDetailsRouteImport } from './routes/quote-details'
+import { Route as QuickQuoteRouteImport } from './routes/quick-quote'
+import { Route as IllustrationSummaryRouteImport } from './routes/illustration-summary'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as GeneratePdfRouteImport } from './routes/generate-pdf'
+import { Route as EmailQuoteRouteImport } from './routes/email-quote'
+import { Route as ConfigureQuoteRouteImport } from './routes/configure-quote'
 import { Route as AgentInfoRouteImport } from './routes/agent-info'
 import { Route as IndexRouteImport } from './routes/index'
 
+const QuoteFormRoute = QuoteFormRouteImport.update({
+  id: '/quote-form',
+  path: '/quote-form',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuoteDetailsRoute = QuoteDetailsRouteImport.update({
+  id: '/quote-details',
+  path: '/quote-details',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuickQuoteRoute = QuickQuoteRouteImport.update({
+  id: '/quick-quote',
+  path: '/quick-quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IllustrationSummaryRoute = IllustrationSummaryRouteImport.update({
+  id: '/illustration-summary',
+  path: '/illustration-summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -22,6 +48,16 @@ const HomeRoute = HomeRouteImport.update({
 const GeneratePdfRoute = GeneratePdfRouteImport.update({
   id: '/generate-pdf',
   path: '/generate-pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailQuoteRoute = EmailQuoteRouteImport.update({
+  id: '/email-quote',
+  path: '/email-quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfigureQuoteRoute = ConfigureQuoteRouteImport.update({
+  id: '/configure-quote',
+  path: '/configure-quote',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentInfoRoute = AgentInfoRouteImport.update({
@@ -38,39 +74,122 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent-info': typeof AgentInfoRoute
+  '/configure-quote': typeof ConfigureQuoteRoute
+  '/email-quote': typeof EmailQuoteRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
+  '/illustration-summary': typeof IllustrationSummaryRoute
+  '/quick-quote': typeof QuickQuoteRoute
+  '/quote-details': typeof QuoteDetailsRoute
+  '/quote-form': typeof QuoteFormRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent-info': typeof AgentInfoRoute
+  '/configure-quote': typeof ConfigureQuoteRoute
+  '/email-quote': typeof EmailQuoteRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
+  '/illustration-summary': typeof IllustrationSummaryRoute
+  '/quick-quote': typeof QuickQuoteRoute
+  '/quote-details': typeof QuoteDetailsRoute
+  '/quote-form': typeof QuoteFormRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agent-info': typeof AgentInfoRoute
+  '/configure-quote': typeof ConfigureQuoteRoute
+  '/email-quote': typeof EmailQuoteRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
+  '/illustration-summary': typeof IllustrationSummaryRoute
+  '/quick-quote': typeof QuickQuoteRoute
+  '/quote-details': typeof QuoteDetailsRoute
+  '/quote-form': typeof QuoteFormRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agent-info' | '/generate-pdf' | '/home'
+  fullPaths:
+    | '/'
+    | '/agent-info'
+    | '/configure-quote'
+    | '/email-quote'
+    | '/generate-pdf'
+    | '/home'
+    | '/illustration-summary'
+    | '/quick-quote'
+    | '/quote-details'
+    | '/quote-form'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agent-info' | '/generate-pdf' | '/home'
-  id: '__root__' | '/' | '/agent-info' | '/generate-pdf' | '/home'
+  to:
+    | '/'
+    | '/agent-info'
+    | '/configure-quote'
+    | '/email-quote'
+    | '/generate-pdf'
+    | '/home'
+    | '/illustration-summary'
+    | '/quick-quote'
+    | '/quote-details'
+    | '/quote-form'
+  id:
+    | '__root__'
+    | '/'
+    | '/agent-info'
+    | '/configure-quote'
+    | '/email-quote'
+    | '/generate-pdf'
+    | '/home'
+    | '/illustration-summary'
+    | '/quick-quote'
+    | '/quote-details'
+    | '/quote-form'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentInfoRoute: typeof AgentInfoRoute
+  ConfigureQuoteRoute: typeof ConfigureQuoteRoute
+  EmailQuoteRoute: typeof EmailQuoteRoute
   GeneratePdfRoute: typeof GeneratePdfRoute
   HomeRoute: typeof HomeRoute
+  IllustrationSummaryRoute: typeof IllustrationSummaryRoute
+  QuickQuoteRoute: typeof QuickQuoteRoute
+  QuoteDetailsRoute: typeof QuoteDetailsRoute
+  QuoteFormRoute: typeof QuoteFormRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/quote-form': {
+      id: '/quote-form'
+      path: '/quote-form'
+      fullPath: '/quote-form'
+      preLoaderRoute: typeof QuoteFormRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quote-details': {
+      id: '/quote-details'
+      path: '/quote-details'
+      fullPath: '/quote-details'
+      preLoaderRoute: typeof QuoteDetailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quick-quote': {
+      id: '/quick-quote'
+      path: '/quick-quote'
+      fullPath: '/quick-quote'
+      preLoaderRoute: typeof QuickQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/illustration-summary': {
+      id: '/illustration-summary'
+      path: '/illustration-summary'
+      fullPath: '/illustration-summary'
+      preLoaderRoute: typeof IllustrationSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home': {
       id: '/home'
       path: '/home'
@@ -83,6 +202,20 @@ declare module '@tanstack/react-router' {
       path: '/generate-pdf'
       fullPath: '/generate-pdf'
       preLoaderRoute: typeof GeneratePdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email-quote': {
+      id: '/email-quote'
+      path: '/email-quote'
+      fullPath: '/email-quote'
+      preLoaderRoute: typeof EmailQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configure-quote': {
+      id: '/configure-quote'
+      path: '/configure-quote'
+      fullPath: '/configure-quote'
+      preLoaderRoute: typeof ConfigureQuoteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent-info': {
@@ -105,8 +238,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentInfoRoute: AgentInfoRoute,
+  ConfigureQuoteRoute: ConfigureQuoteRoute,
+  EmailQuoteRoute: EmailQuoteRoute,
   GeneratePdfRoute: GeneratePdfRoute,
   HomeRoute: HomeRoute,
+  IllustrationSummaryRoute: IllustrationSummaryRoute,
+  QuickQuoteRoute: QuickQuoteRoute,
+  QuoteDetailsRoute: QuoteDetailsRoute,
+  QuoteFormRoute: QuoteFormRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
