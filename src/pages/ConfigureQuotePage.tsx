@@ -5,6 +5,12 @@ import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { BORDER, COLORS } from "../constants/theme";
 import { FiChevronDown } from "react-icons/fi";
+import { useQuickFormStore } from "../stores/QuickFormStore";
+import { getPlanCodeByParams, getPlanCode } from "../utils/planCodes";
+import type { ProductType } from "../types/planCodes";
+import { getProductShortCode } from "../utils/productCode";
+import { shortSex } from "../utils/shortSex";
+import { shortSmokingStatus } from "../utils/shortSmokingStatus";
 
 // Type for quote data
 interface QuoteData {
@@ -49,24 +55,118 @@ const fetchMockQuoteData = async (): Promise<QuoteData> => {
   });
 };
 
+// Helper function to convert number to formatted string with commas
+const formatNumberWithCommas = (num: number): string => {
+  return num.toLocaleString('en-US');
+};
+
+// Helper function to parse string with commas to number
+const parseFormattedNumber = (str: string): number => {
+  return parseInt(str.replace(/,/g, ''), 10) || 0;
+};
+
+// Helper function to format input value with commas while typing
+const formatInputValue = (value: string): string => {
+  // Remove all non-digit characters
+  const numericValue = value.replace(/[^\d]/g, '');
+  
+  // If empty, return empty string
+  if (!numericValue) return '';
+  
+  // Parse to number and format with commas
+  const num = parseInt(numericValue, 10);
+  if (isNaN(num)) return '';
+  
+  return num.toLocaleString('en-US');
+};
+
+// Helper function to convert product name to ProductType from planCodes
+const convertProductNameToProductType = (productName: string): ProductType | null => {
+  const shortCode = getProductShortCode(productName);
+  if (!shortCode) return null;
+
+  // Map short codes to ProductType enum
+  const productTypeMap: Record<string, ProductType> = {
+    'PWL': 'PWL',
+    'LT10': 'LegacyTerm',
+    'LT15': 'LegacyTerm',
+    'LT20': 'LegacyTerm',
+    'LT25': 'LegacyTerm',
+    'LT30': 'LegacyTerm',
+    'LT35': 'LegacyTerm',
+    'ST10': 'SelectTerm',
+    'ST15': 'SelectTerm',
+    'ST20': 'SelectTerm',
+    'ST30': 'SelectTerm',
+    'WSP_PART': 'WorkSitePlusParticipating',
+    'WSP_TERM': 'WorkSitePlusTerm',
+    'PC_LEVEL': 'PremierChoiceLevel',
+    'PC_GRADED': 'PremierChoiceGraded',
+  };
+
+  return productTypeMap[shortCode] || null;
+};
+
+// Helper function to extract term from product name
+const extractTermFromProduct = (productName: string, shortCode?: string): number | undefined => {
+  // For Legacy Term and SelectTerm, extract term from name or short code
+  if (shortCode?.startsWith('LT') || shortCode?.startsWith('ST')) {
+    // Try to extract from short code first (e.g., LT10, ST20)
+    const codeMatch = shortCode.match(/(\d+)/);
+    if (codeMatch) {
+      return parseInt(codeMatch[1], 10);
+    }
+    // Fallback: extract from product name
+    const nameMatch = productName.match(/(\d+)\s*Year/);
+    if (nameMatch) {
+      return parseInt(nameMatch[1], 10);
+    }
+  }
+  
+  // For WorkSitePlus Term, check if it's a term product
+  if (shortCode === 'WSP_TERM') {
+    const nameMatch = productName.match(/(\d+)\s*Year/);
+    if (nameMatch) {
+      return parseInt(nameMatch[1], 10);
+    }
+    // Default to 20 for WorkSitePlus Term
+    return 20;
+  }
+  
+  return undefined;
+};
+
 export const ConfigureQuotePage = () => {
   const navigate = useNavigate();
-  const [product, setProduct] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [paymentMode, setPaymentMode] = useState("");
-  const [faceAmount, setFaceAmount] = useState("");
+  const { updateConfigure, product: storeProduct, paymentMethod: storePaymentMethod, 
+    paymentMode: storePaymentMode, faceAmount: storeFaceAmount, 
+    waiverOfPremiumEnabled: storeWaiverOfPremium, accidentalDeathEnabled: storeAccidentalDeath,
+    accidentalDeath: storeAccidentalDeathData, dependentChildEnabled: storeDependentChild,
+    dependentChild: storeDependentChildValue, guaranteedInsurabilityEnabled: storeGuaranteedInsurability,
+    guaranteedInsurability: storeGuaranteedInsurabilityValue, insured: storeInsured } = useQuickFormStore();
+
+  // Initialize state from store
+  const [product, setProduct] = useState(storeProduct || "");
+  const [paymentMethod, setPaymentMethod] = useState(storePaymentMethod || "");
+  const [paymentMode, setPaymentMode] = useState(storePaymentMode || "");
+  const [faceAmount, setFaceAmount] = useState(storeFaceAmount ? formatNumberWithCommas(storeFaceAmount) : "");
   const [planCode, setPlanCode] = useState("");
-  const [waiverOfPremium, setWaiverOfPremium] = useState(false);
-  const [accidentalDeath, setAccidentalDeath] = useState(false);
+  const [waiverOfPremium, setWaiverOfPremium] = useState(storeWaiverOfPremium || false);
+  const [accidentalDeath, setAccidentalDeath] = useState(storeAccidentalDeath || false);
   const [accidentalDeathType, setAccidentalDeathType] = useState<"ADB" | "ADD">(
-    "ADB"
+    storeAccidentalDeathData?.type || "ADB"
   );
-  const [accidentalDeathAmount, setAccidentalDeathAmount] = useState("0");
-  const [dependentChild, setDependentChild] = useState(false);
-  const [dependentChildAmount, setDependentChildAmount] = useState("1000");
-  const [guaranteedInsurability, setGuaranteedInsurability] = useState(false);
-  const [guaranteedInsurabilityAmount, setGuaranteedInsurabilityAmount] =
-    useState("5000");
+  const [accidentalDeathAmount, setAccidentalDeathAmount] = useState(
+    storeAccidentalDeathData?.value ? formatNumberWithCommas(storeAccidentalDeathData.value) : "0"
+  );
+  const [dependentChild, setDependentChild] = useState(storeDependentChild || false);
+  const [dependentChildAmount, setDependentChildAmount] = useState(
+    storeDependentChildValue ? formatNumberWithCommas(storeDependentChildValue) : "1000"
+  );
+  const [guaranteedInsurability, setGuaranteedInsurability] = useState(storeGuaranteedInsurability || false);
+  const [guaranteedInsurabilityAmount, setGuaranteedInsurabilityAmount] = useState(
+    storeGuaranteedInsurabilityValue ? formatNumberWithCommas(storeGuaranteedInsurabilityValue) : "5000"
+  );
   const [premium, setPremium] = useState("14.73");
   const [loading, setLoading] = useState(true);
 
@@ -77,19 +177,23 @@ export const ConfigureQuotePage = () => {
         // TODO: Replace with actual API call
         const data = await fetchMockQuoteData();
 
-        setProduct(data.product);
-        setPaymentMethod(data.paymentMethod);
-        setPaymentMode(data.paymentMode);
-        setFaceAmount(data.faceAmount);
-        setPlanCode(data.planCode);
-        setWaiverOfPremium(data.waiverOfPremium);
-        setAccidentalDeath(data.accidentalDeath);
-        setAccidentalDeathType(data.accidentalDeathType);
-        setAccidentalDeathAmount(data.accidentalDeathAmount);
-        setDependentChild(data.dependentChild);
-        setDependentChildAmount(data.dependentChildAmount);
-        setGuaranteedInsurability(data.guaranteedInsurability);
-        setGuaranteedInsurabilityAmount(data.guaranteedInsurabilityAmount);
+        // Only use mock data if store values are defaults
+        // Note: planCode is calculated automatically based on product and insured data
+        if (!storeProduct || storeProduct === 'PWL - Participating Whole Life') {
+          setProduct(data.product);
+          setPaymentMethod(data.paymentMethod);
+          setPaymentMode(data.paymentMode);
+          setFaceAmount(formatInputValue(data.faceAmount));
+          // Don't set planCode from mock data - it will be calculated by useEffect
+          setWaiverOfPremium(data.waiverOfPremium);
+          setAccidentalDeath(data.accidentalDeath);
+          setAccidentalDeathType(data.accidentalDeathType);
+          setAccidentalDeathAmount(formatInputValue(data.accidentalDeathAmount));
+          setDependentChild(data.dependentChild);
+          setDependentChildAmount(formatInputValue(data.dependentChildAmount));
+          setGuaranteedInsurability(data.guaranteedInsurability);
+          setGuaranteedInsurabilityAmount(formatInputValue(data.guaranteedInsurabilityAmount));
+        }
         setPremium(data.premium);
       } catch (error) {
         console.error("Error loading quote data:", error);
@@ -99,7 +203,162 @@ export const ConfigureQuotePage = () => {
     };
 
     loadQuoteData();
-  }, []);
+  }, [storeProduct]);
+
+  // Sync product to store
+  useEffect(() => {
+    if (product) {
+      updateConfigure({ product });
+    }
+  }, [product, updateConfigure]);
+
+  // Sync paymentMethod to store
+  useEffect(() => {
+    if (paymentMethod) {
+      updateConfigure({ paymentMethod });
+    }
+  }, [paymentMethod, updateConfigure]);
+
+  // Sync paymentMode to store
+  useEffect(() => {
+    if (paymentMode) {
+      updateConfigure({ paymentMode });
+    }
+  }, [paymentMode, updateConfigure]);
+
+  // Sync faceAmount to store
+  useEffect(() => {
+    const parsedAmount = parseFormattedNumber(faceAmount);
+    if (parsedAmount > 0) {
+      updateConfigure({ faceAmount: parsedAmount });
+    }
+  }, [faceAmount, updateConfigure]);
+
+  // Sync waiverOfPremium to store
+  useEffect(() => {
+    const parsedFaceAmount = parseFormattedNumber(faceAmount);
+    updateConfigure({ 
+      waiverOfPremiumEnabled: waiverOfPremium,
+      waiverOfPremiumValue: waiverOfPremium ? parsedFaceAmount : null
+    });
+  }, [waiverOfPremium, faceAmount, updateConfigure]);
+
+  // Sync accidentalDeath to store
+  useEffect(() => {
+    const parsedAmount = parseFormattedNumber(accidentalDeathAmount);
+    updateConfigure({ 
+      accidentalDeathEnabled: accidentalDeath,
+      accidentalDeath: accidentalDeath 
+        ? { type: accidentalDeathType, value: parsedAmount }
+        : { type: null, value: 0 }
+    });
+  }, [accidentalDeath, accidentalDeathType, accidentalDeathAmount, updateConfigure]);
+
+  // Sync dependentChild to store
+  useEffect(() => {
+    const parsedAmount = parseFormattedNumber(dependentChildAmount);
+    updateConfigure({ 
+      dependentChildEnabled: dependentChild,
+      dependentChild: dependentChild ? parsedAmount : null
+    });
+  }, [dependentChild, dependentChildAmount, updateConfigure]);
+
+  // Sync guaranteedInsurability to store
+  useEffect(() => {
+    const parsedAmount = parseFormattedNumber(guaranteedInsurabilityAmount);
+    updateConfigure({ 
+      guaranteedInsurabilityEnabled: guaranteedInsurability,
+      guaranteedInsurability: guaranteedInsurability ? parsedAmount : null
+    });
+  }, [guaranteedInsurability, guaranteedInsurabilityAmount, updateConfigure]);
+
+  // Calculate plan code based on product and insured parameters
+  useEffect(() => {
+    // Wait until loading is complete to avoid race conditions
+    if (loading) {
+      return;
+    }
+
+    if (!product) {
+      return;
+    }
+
+    const shortCode = getProductShortCode(product);
+    
+    // Handle Annuity products - they have special plan codes
+    if (product === 'Flexible Premium Annuity') {
+      setPlanCode('FlexibleAnnuity');
+      return;
+    }
+    
+    if (product === 'NFL Annuity') {
+      setPlanCode('NFLAnnuity');
+      return;
+    }
+
+    // For other products, we need insured data
+    if (!storeInsured) {
+      return;
+    }
+
+    const productType = convertProductNameToProductType(product);
+    if (!productType) {
+      return;
+    }
+
+    // Convert insured data to plan code format
+    const gender = shortSex(storeInsured.sex) === 'M' ? 'M' : 'F';
+    const smokingStatus = shortSmokingStatus(storeInsured.smokingHabit); // Returns 'Y' or 'N'
+    
+    // For PWL, use direct control code key approach (most reliable)
+    if (shortCode === 'PWL') {
+      const controlCodeKey = `${gender}${smokingStatus}`; // MY, FY, MN, or FN
+      const pwlPlanCode = getPlanCode(controlCodeKey);
+      if (pwlPlanCode) {
+        setPlanCode(pwlPlanCode);
+        return;
+      }
+    }
+    
+    // Extract term for term products
+    const term = extractTermFromProduct(product, shortCode);
+
+    // Get plan code
+    const calculatedPlanCode = getPlanCodeByParams(productType, gender, smokingStatus, term);
+    if (calculatedPlanCode) {
+      setPlanCode(calculatedPlanCode);
+    } else {
+      // Fallback: try to build control code key like in getIllustrationData
+      try {
+        const controlCodeKey = `${gender}${smokingStatus}`;
+        let finalKey = controlCodeKey;
+        
+        if (shortCode?.startsWith('LT') || shortCode?.startsWith('ST')) {
+          if (term) {
+            finalKey = `${controlCodeKey}${term}`;
+            if (shortCode.startsWith('ST')) {
+              finalKey += '_ST';
+            }
+          }
+        } else if (shortCode === 'WSP_TERM') {
+          finalKey = `${controlCodeKey}20_WSP`;
+        } else if (shortCode === 'WSP_PART') {
+          finalKey = `${controlCodeKey}_WSP`;
+        } else if (shortCode === 'PC_LEVEL') {
+          finalKey = `${controlCodeKey}_PC_L`;
+        } else if (shortCode === 'PC_GRADED') {
+          finalKey = `${controlCodeKey}_PC_G`;
+        }
+        
+        const fallbackPlanCode = getPlanCode(finalKey);
+        if (fallbackPlanCode) {
+          setPlanCode(fallbackPlanCode);
+        }
+      } catch (error) {
+        console.warn('Could not get plan code:', error);
+      }
+    }
+  }, [product, storeInsured, loading]);
 
   // Premium will be calculated by backend - just display the value from API
 
@@ -226,6 +485,10 @@ export const ConfigureQuotePage = () => {
                     <option value="Quarterly">Quarterly</option>
                     <option value="Semi-Annual">Semi-Annual</option>
                     <option value="Annual">Annual</option>
+                    <option value="Every 4 Weeks">Every 4 Weeks</option>
+                    <option value="Semi-Monthly">Semi-Monthly</option>
+                    <option value="Bi-Weekly">Bi-Weekly</option>
+                    <option value="Weekly">Weekly</option>
                   </select>
                   <FiChevronDown
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -246,7 +509,10 @@ export const ConfigureQuotePage = () => {
                   <input
                     type="text"
                     value={faceAmount}
-                    onChange={(e) => setFaceAmount(e.target.value)}
+                    onChange={(e) => {
+                      const formatted = formatInputValue(e.target.value);
+                      setFaceAmount(formatted);
+                    }}
                     className="w-full px-4 pl-8 py-3 bg-white border border-gray-300 rounded-lg text-[#000000] focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 transition-all duration-200"
                     style={{ borderRadius: BORDER.borderRadius }}
                     placeholder="10,000"
@@ -330,9 +596,10 @@ export const ConfigureQuotePage = () => {
                       <input
                         type="text"
                         value={accidentalDeathAmount}
-                        onChange={(e) =>
-                          setAccidentalDeathAmount(e.target.value)
-                        }
+                        onChange={(e) => {
+                          const formatted = formatInputValue(e.target.value);
+                          setAccidentalDeathAmount(formatted);
+                        }}
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[#000000] focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 transition-all duration-200"
                         style={{ borderRadius: BORDER.borderRadius }}
                         placeholder="0"
@@ -364,20 +631,23 @@ export const ConfigureQuotePage = () => {
                 </div>
                 {dependentChild && (
                   <div className="px-4 pb-3 flex gap-2">
-                    {["1000", "2000", "3000", "4000"].map((amount) => (
-                      <button
-                        key={amount}
-                        onClick={() => setDependentChildAmount(amount)}
-                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
-                          dependentChildAmount === amount
-                            ? "bg-[#0D175C] text-white"
-                            : "bg-gray-200 text-[#000000]"
-                        }`}
-                        style={{ borderRadius: BORDER.borderRadius }}
-                      >
-                        ${amount}
-                      </button>
-                    ))}
+                    {["1000", "2000", "3000", "4000"].map((amount) => {
+                      const formattedAmount = formatNumberWithCommas(parseInt(amount, 10));
+                      return (
+                        <button
+                          key={amount}
+                          onClick={() => setDependentChildAmount(formattedAmount)}
+                          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
+                            parseFormattedNumber(dependentChildAmount) === parseInt(amount, 10)
+                              ? "bg-[#0D175C] text-white"
+                              : "bg-gray-200 text-[#000000]"
+                          }`}
+                          style={{ borderRadius: BORDER.borderRadius }}
+                        >
+                          ${formattedAmount}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -402,20 +672,23 @@ export const ConfigureQuotePage = () => {
                 </div>
                 {guaranteedInsurability && (
                   <div className="px-4 pb-3 flex gap-2">
-                    {["5000", "10000"].map((amount) => (
-                      <button
-                        key={amount}
-                        onClick={() => setGuaranteedInsurabilityAmount(amount)}
-                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
-                          guaranteedInsurabilityAmount === amount
-                            ? "bg-[#0D175C] text-white"
-                            : "bg-gray-200 text-[#000000]"
-                        }`}
-                        style={{ borderRadius: BORDER.borderRadius }}
-                      >
-                        ${amount}
-                      </button>
-                    ))}
+                    {["5000", "10000"].map((amount) => {
+                      const formattedAmount = formatNumberWithCommas(parseInt(amount, 10));
+                      return (
+                        <button
+                          key={amount}
+                          onClick={() => setGuaranteedInsurabilityAmount(formattedAmount)}
+                          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
+                            parseFormattedNumber(guaranteedInsurabilityAmount) === parseInt(amount, 10)
+                              ? "bg-[#0D175C] text-white"
+                              : "bg-gray-200 text-[#000000]"
+                          }`}
+                          style={{ borderRadius: BORDER.borderRadius }}
+                        >
+                          ${formattedAmount}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

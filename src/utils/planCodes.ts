@@ -1,4 +1,5 @@
-import { PLAN_CODE_MAPPING, PLAN_CODE_TO_CONTROL_KEY, PlanCodeInfo, ProductType } from '../types/planCodes';
+import { PLAN_CODE_MAPPING, PLAN_CODE_TO_CONTROL_KEY } from '../types/planCodes';
+import type { PlanCodeInfo, ProductType } from '../types/planCodes';
 
 /**
  * Проверяет, является ли продукт Term продуктом
