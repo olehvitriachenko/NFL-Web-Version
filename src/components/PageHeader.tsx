@@ -12,19 +12,21 @@ export const PageHeader = ({ title, onBack, onHome }: PageHeaderProps) => {
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {onBack && (
           <button
-            className="p-2 text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-lg transition-colors flex-shrink-0"
+            className="p-2 text-[#000000] hover:bg-gray-100 transition-colors flex-shrink-0"
+            style={{ borderRadius: 10 }}
             onClick={onBack}
             aria-label="Back"
           >
             <FiArrowLeft size={20} />
           </button>
         )}
-        <h1 className="text-xl font-semibold text-[#1d1d1f] flex-1 text-center m-0">
+        <h1 className="text-xl font-semibold text-[#000000] flex-1 text-center m-0">
           {title}
         </h1>
         {onHome && (
           <button
-            className="p-2 text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-lg transition-colors flex-shrink-0"
+            className="p-2 text-[#000000] hover:bg-gray-100 transition-colors flex-shrink-0"
+            style={{ borderRadius: 10 }}
             onClick={onHome}
             aria-label="Home"
           >

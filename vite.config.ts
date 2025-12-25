@@ -2,9 +2,18 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
+import path from 'path'
+import { build } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@public': path.resolve(__dirname, './public'),
+      '@assets': path.resolve(__dirname, './src/assets'),
+    },
+  },
   plugins: [
     TanStackRouterVite(),
     react(),
