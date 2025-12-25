@@ -17,6 +17,10 @@ files:
   - "!**/{appveyor.yml,.travis.yml,circle.yml}"
   - "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
 
+extraResources:
+  - from: rates.sqlite
+    to: rates.sqlite
+
 win:
   target:
     - target: nsis

@@ -139,6 +139,21 @@ class SQLiteStorage {
       throw new Error(result.error || 'Failed to update agent');
     }
   }
+
+  async getAgentById(id: number): Promise<(AgentInfo & { id: number; createdAt: string }) | null> {
+    if (!window.electron?.db) {
+      throw new Error('Electron IPC not available');
+    }
+
+    const result = await window.electron.db.getAgentById(id);
+    if (!result.success) {
+      if (result.error === 'Agent not found') {
+        return null;
+      }
+      throw new Error(result.error || 'Failed to get agent');
+    }
+    return result.data || null;
+  }
 }
 
 // Database interface
@@ -172,6 +187,16 @@ class Database {
       await (this.storage as SQLiteStorage).updateAgent(id, agent);
     } else {
       await (this.storage as IndexedDBStorage).updateAgent(id, agent);
+    }
+  }
+
+  async getAgentById(id: number): Promise<(AgentInfo & { id: number; createdAt: string }) | null> {
+    if (isElectron) {
+      return await (this.storage as SQLiteStorage).getAgentById(id);
+    } else {
+      // Для IndexedDB ищем в массиве
+      const agents = await this.getAllAgents();
+      return agents.find(a => a.id === id) || null;
     }
   }
 }
