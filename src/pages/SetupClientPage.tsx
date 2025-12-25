@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
@@ -9,6 +9,7 @@ export const SetupClientPage = () => {
   const navigate = useNavigate();
   const [effectiveStartDate, setEffectiveStartDate] = useState("2025-12-25");
   const [insuredInfo, setInsuredInfo] = useState<string | null>(null);
+  const [payorInfo, setPayorInfo] = useState<string | null>(null);
 
   // Load insured info from localStorage on mount
   useEffect(() => {
@@ -18,26 +19,35 @@ export const SetupClientPage = () => {
     }
   }, []);
 
-  // Listen for storage changes and custom events (when coming back from Client Information page)
+  // Listen for storage changes and custom events (when coming back from Client Information or Payor Information pages)
   useEffect(() => {
     const handleStorageChange = () => {
+      const savedInsuredInfo = localStorage.getItem("insuredInfo");
+      setInsuredInfo(savedInsuredInfo);
+      const savedPayorInfo = localStorage.getItem("payorInfo");
+      setPayorInfo(savedPayorInfo);
+    };
+
+    const handleInsuredUpdate = () => {
       const savedInfo = localStorage.getItem("insuredInfo");
       setInsuredInfo(savedInfo);
     };
 
-    const handleInfoUpdate = () => {
-      const savedInfo = localStorage.getItem("insuredInfo");
-      setInsuredInfo(savedInfo);
+    const handlePayorUpdate = () => {
+      const savedInfo = localStorage.getItem("payorInfo");
+      setPayorInfo(savedInfo);
     };
 
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("insuredInfoUpdated", handleInfoUpdate);
+    window.addEventListener("insuredInfoUpdated", handleInsuredUpdate);
+    window.addEventListener("payorInfoUpdated", handlePayorUpdate);
     // Also check on focus (when returning to page)
     window.addEventListener("focus", handleStorageChange);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("insuredInfoUpdated", handleInfoUpdate);
+      window.removeEventListener("insuredInfoUpdated", handleInsuredUpdate);
+      window.removeEventListener("payorInfoUpdated", handlePayorUpdate);
       window.removeEventListener("focus", handleStorageChange);
     };
   }, []);
@@ -61,8 +71,17 @@ export const SetupClientPage = () => {
   };
 
   const handleAddPayor = () => {
-    // TODO: Navigate to add payor page
-    console.log("Add payor");
+    navigate({ to: "/payor-information" });
+  };
+
+  const handleClearPayor = () => {
+    setPayorInfo(null);
+    localStorage.removeItem("payorInfo");
+    localStorage.removeItem("payorFormData");
+  };
+
+  const handleEditPayor = () => {
+    navigate({ to: "/payor-information" });
   };
 
   const handleNext = () => {
@@ -145,9 +164,39 @@ export const SetupClientPage = () => {
               <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.PRIMARY }}>
                 Payor
               </h2>
-              <Button onClick={handleAddPayor} fullWidth variant="primary">
-                ADD
-              </Button>
+              {payorInfo ? (
+                <>
+                  <div className="bg-white p-4 rounded-lg border border-gray-300 mb-3" style={{ borderRadius: BORDER.borderRadius }}>
+                    <input
+                      type="text"
+                      value={payorInfo}
+                      placeholder="No payor information"
+                      readOnly
+                      className="w-full px-4 py-3 bg-transparent border-none text-[#000000] placeholder:text-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleClearPayor}
+                      className="px-4 py-2 bg-gray-200 text-[#0D175C] rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                      style={{ borderRadius: BORDER.borderRadius }}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={handleEditPayor}
+                      className="px-4 py-2 bg-gray-200 text-[#0D175C] rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                      style={{ borderRadius: BORDER.borderRadius }}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <Button onClick={handleAddPayor} fullWidth variant="primary">
+                  ADD
+                </Button>
+              )}
             </div>
 
             {/* Next Button */}

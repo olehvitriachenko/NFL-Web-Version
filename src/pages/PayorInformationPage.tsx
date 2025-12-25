@@ -6,7 +6,7 @@ import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
 import { BORDER, COLORS } from "../constants/theme";
 
-export const ClientInformationPage = () => {
+export const PayorInformationPage = () => {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -16,9 +16,9 @@ export const ClientInformationPage = () => {
   const [rateTable, setRateTable] = useState<"None" | "2" | "3" | "4" | "5" | "6">("None");
   const [rateFlatExtra, setRateFlatExtra] = useState("");
 
-  // Load saved data if exists (only insured data, not payor)
+  // Load saved data if exists
   useEffect(() => {
-    const savedData = localStorage.getItem("insuredFormData");
+    const savedData = localStorage.getItem("payorFormData");
     if (savedData) {
       try {
         const data = JSON.parse(savedData);
@@ -44,15 +44,15 @@ export const ClientInformationPage = () => {
   };
 
   const handleSave = () => {
-    // Format insured info string
+    // Format payor info string
     const age = dateOfBirth ? new Date().getFullYear() - new Date(dateOfBirth).getFullYear() : "";
-    const insuredInfoString = `${firstName} ${lastName}${firstName || lastName ? ", " : ""}${sex === "male" ? "Male" : "Female"}${age ? `, Age ${age}` : ""}, ${smokingHabit}`;
+    const payorInfoString = `${firstName} ${lastName}${firstName || lastName ? ", " : ""}${sex === "male" ? "Male" : "Female"}${age ? `, Age ${age}` : ""}, ${smokingHabit}`;
     
     // Save formatted string for display
-    localStorage.setItem("insuredInfo", insuredInfoString);
+    localStorage.setItem("payorInfo", payorInfoString);
     
     // Save full form data for editing
-    localStorage.setItem("insuredFormData", JSON.stringify({
+    localStorage.setItem("payorFormData", JSON.stringify({
       firstName,
       lastName,
       dateOfBirth,
@@ -63,7 +63,7 @@ export const ClientInformationPage = () => {
     }));
     
     // Trigger custom event to notify SetupClientPage
-    window.dispatchEvent(new Event("insuredInfoUpdated"));
+    window.dispatchEvent(new Event("payorInfoUpdated"));
     
     // Navigate back after saving
     window.history.back();
@@ -72,7 +72,7 @@ export const ClientInformationPage = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
       <OfflineIndicator />
-      <PageHeader title="Client Information" onBack={handleBack} onHome={handleHome} />
+      <PageHeader title="Payor Information" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
         <div className="w-full max-w-[600px]">
           <div className="flex flex-col gap-6">

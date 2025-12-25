@@ -13,6 +13,7 @@ import { Route as QuoteLifeRouteImport } from './routes/quote-life'
 import { Route as QuoteFormRouteImport } from './routes/quote-form'
 import { Route as QuoteDetailsRouteImport } from './routes/quote-details'
 import { Route as QuickQuoteRouteImport } from './routes/quick-quote'
+import { Route as PayorInformationRouteImport } from './routes/payor-information'
 import { Route as IllustrationSummaryRouteImport } from './routes/illustration-summary'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as EmailQuoteRouteImport } from './routes/email-quote'
@@ -39,6 +40,11 @@ const QuoteDetailsRoute = QuoteDetailsRouteImport.update({
 const QuickQuoteRoute = QuickQuoteRouteImport.update({
   id: '/quick-quote',
   path: '/quick-quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PayorInformationRoute = PayorInformationRouteImport.update({
+  id: '/payor-information',
+  path: '/payor-information',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IllustrationSummaryRoute = IllustrationSummaryRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/email-quote': typeof EmailQuoteRoute
   '/home': typeof HomeRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
+  '/payor-information': typeof PayorInformationRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/email-quote': typeof EmailQuoteRoute
   '/home': typeof HomeRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
+  '/payor-information': typeof PayorInformationRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/email-quote': typeof EmailQuoteRoute
   '/home': typeof HomeRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
+  '/payor-information': typeof PayorInformationRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/email-quote'
     | '/home'
     | '/illustration-summary'
+    | '/payor-information'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/email-quote'
     | '/home'
     | '/illustration-summary'
+    | '/payor-information'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/email-quote'
     | '/home'
     | '/illustration-summary'
+    | '/payor-information'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   EmailQuoteRoute: typeof EmailQuoteRoute
   HomeRoute: typeof HomeRoute
   IllustrationSummaryRoute: typeof IllustrationSummaryRoute
+  PayorInformationRoute: typeof PayorInformationRoute
   QuickQuoteRoute: typeof QuickQuoteRoute
   QuoteDetailsRoute: typeof QuoteDetailsRoute
   QuoteFormRoute: typeof QuoteFormRoute
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/quick-quote'
       fullPath: '/quick-quote'
       preLoaderRoute: typeof QuickQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payor-information': {
+      id: '/payor-information'
+      path: '/payor-information'
+      fullPath: '/payor-information'
+      preLoaderRoute: typeof PayorInformationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/illustration-summary': {
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmailQuoteRoute: EmailQuoteRoute,
   HomeRoute: HomeRoute,
   IllustrationSummaryRoute: IllustrationSummaryRoute,
+  PayorInformationRoute: PayorInformationRoute,
   QuickQuoteRoute: QuickQuoteRoute,
   QuoteDetailsRoute: QuoteDetailsRoute,
   QuoteFormRoute: QuoteFormRoute,
