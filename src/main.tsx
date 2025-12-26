@@ -8,26 +8,48 @@ import {
 } from "@tanstack/react-router";
 import "./index.css";
 
+// Функція для нормалізації шляху - витягує правильний шлях з Windows шляху
+const normalizeRouterPath = (path: string): string => {
+  const windowsDrivePattern = /^\/[A-Za-z]:\//;
+  
+  // Якщо це Windows шлях типу /C:/home, витягуємо тільки /home
+  if (windowsDrivePattern.test(path)) {
+    // Видаляємо /C:/ або /D:/ і т.д.
+    const match = path.match(/^\/[A-Za-z]:\/(.+)$/);
+    if (match && match[1]) {
+      return '/' + match[1];
+    }
+    return '/';
+  }
+  
+  // Якщо шлях містить index.html або dist, нормалізуємо
+  if (path.includes('index.html')) {
+    return path.replace(/index\.html.*$/, '') || '/';
+  }
+  
+  if (path.includes('dist')) {
+    const distIndex = path.indexOf('dist');
+    if (distIndex !== -1) {
+      const afterDist = path.substring(distIndex + 4);
+      const normalized = afterDist.replace(/\\/g, '/').replace(/index\.html$/, '');
+      return normalized || '/';
+    }
+  }
+  
+  return path;
+};
+
 // Компонент для Not Found сторінки
 const NotFoundComponent = () => {
   const router = useRouter();
 
   useEffect(() => {
     const currentPath = router.state.location.pathname;
-    const windowPath = window.location.pathname;
+    const normalized = normalizeRouterPath(currentPath);
 
-    // Перевіряємо, чи це Windows шлях (наприклад /C:/, /D:/)
-    const windowsDrivePattern = /^\/[A-Za-z]:\//;
-
-    // Автоматично перенаправляємо на корінь, якщо шлях неправильний
-    if (
-      currentPath !== "/" &&
-      (currentPath.includes("index.html") ||
-        currentPath.includes("dist") ||
-        windowsDrivePattern.test(windowPath) ||
-        windowsDrivePattern.test(currentPath))
-    ) {
-      router.navigate({ to: "/" });
+    // Якщо шлях неправильний, виправляємо його
+    if (currentPath !== normalized) {
+      router.navigate({ to: normalized });
     }
   }, [router]);
 
@@ -144,6 +166,15 @@ const router = createRouter({
   }),
   defaultNotFoundComponent: NotFoundComponent,
 });
+
+// Вимкнути Service Worker для Electron (file:// протокол не підтримує Service Worker)
+if (isElectron && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      registration.unregister();
+    });
+  });
+}
 
 // Реєстрація типів для TypeScript
 declare module "@tanstack/react-router" {

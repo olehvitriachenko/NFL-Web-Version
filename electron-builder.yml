@@ -7,7 +7,7 @@ directories:
 
 files:
   - dist/**/*
-  - dist-electron/**/*
+  - electron/**/*
   - package.json
   - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
   - "!.editorconfig"
@@ -37,6 +37,10 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: ${productName}
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  # Використовувати кастомний NSIS скрипт
+  include: build/installer.nsh
 
 mac:
   category: public.app-category.productivity
@@ -56,4 +60,3 @@ linux:
         - x64
   category: Utility
   icon: build/icon.png
-
