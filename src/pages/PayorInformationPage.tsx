@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
-import { BORDER, COLORS } from "../constants/theme";
+import { navigateBack } from "../utils/navigation";
+import { BORDER } from "../constants/theme";
 
 export const PayorInformationPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -36,7 +38,7 @@ export const PayorInformationPage = () => {
   }, []);
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {
@@ -66,7 +68,7 @@ export const PayorInformationPage = () => {
     window.dispatchEvent(new Event("payorInfoUpdated"));
     
     // Navigate back after saving
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   return (

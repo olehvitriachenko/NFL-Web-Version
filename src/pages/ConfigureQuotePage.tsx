@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
+import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
 import { FiChevronDown } from "react-icons/fi";
 
@@ -51,6 +52,7 @@ const fetchMockQuoteData = async (): Promise<QuoteData> => {
 
 export const ConfigureQuotePage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const [product, setProduct] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
@@ -104,7 +106,7 @@ export const ConfigureQuotePage = () => {
   // Premium will be calculated by backend - just display the value from API
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {

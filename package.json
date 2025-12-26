@@ -1,7 +1,9 @@
 {
   "name": "nfl-web-electron",
-  "private": true,
   "version": "0.0.0",
+  "description": "NFL Web Application",
+  "author": "NFL",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +12,9 @@
     "preview": "vite preview",
     "electron": "npm run preload:build && electron electron/main.js",
     "electron:dev": "npm run preload:build && concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron electron/main.js\"",
-    "electron:build": "npm run build && npm run preload:build && electron-builder",
+    "electron:build": "npm run build && npm run preload:build && node build-electron.js",
+    "electron:build:sign": "npm run electron:build && npm run sign:exe",
+    "sign:exe": "signtool sign /f certificate.pfx /p NFL2024 /t http://timestamp.digicert.com /fd SHA256 \"dist-electron\\win-unpacked\\NFL Web.exe\"",
     "preload:build": "tsc electron/preload.ts electron/main.ts --outDir electron --target ES2020 --module ESNext --moduleResolution node --esModuleInterop --skipLibCheck"
   },
   "dependencies": {
@@ -18,7 +22,6 @@
     "axios": "^1.13.2",
     "better-sqlite3": "^12.5.0",
     "crypto-js": "^4.2.0",
-    "electron": "^39.2.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.69.0",
@@ -28,6 +31,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "electron": "^39.2.7",
     "@eslint/js": "^9.39.1",
     "@tanstack/router-devtools": "^1.143.6",
     "@tanstack/router-plugin": "^1.143.6",
@@ -39,6 +43,8 @@
     "@vitejs/plugin-react": "^5.1.1",
     "@tailwindcss/postcss": "^4.1.18",
     "autoprefixer": "^10.4.23",
+    "concurrently": "^9.0.0",
+    "electron-builder": "^24.9.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -48,6 +54,46 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "wait-on": "^7.2.0"
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.nfl.web",
+    "productName": "NFL Web",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/main.js",
+      "electron/preload.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "sign": false,
+      "verifyUpdateCodeSignature": false,
+      "signingHashAlgorithms": [],
+      "signDlls": false,
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "menuCategory": true,
+      "shortcutName": "NFL Web",
+      "include": "build/installer.nsh"
+    },
+    "mac": {
+      "target": "dmg",
+      "identity": null
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

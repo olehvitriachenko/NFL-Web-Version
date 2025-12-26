@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { BORDER, COLORS } from "../constants/theme";
+import { navigateBack } from "../utils/navigation";
 
 export const QuoteFormPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   // const search = useSearch({ from: "/quote-form", strict: false }) as {
   //   company?: "nfl" | "aml";
   // };
@@ -18,7 +20,7 @@ export const QuoteFormPage = () => {
   const [payorSmokingHabit, setPayorSmokingHabit] = useState("Non smoker");
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {

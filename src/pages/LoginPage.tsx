@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "../components/Button";
+import nflLogo from "/nfl_brand_logo.png";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export const LoginPage = () => {
           <div className="text-center">
             <div className="flex justify-center mb-16">
               <img
-                src="/nfl_brand_logo.png"
+                src={nflLogo}
                 alt="National FARM • LIFE"
                 className="h-28 object-contain"
               />
