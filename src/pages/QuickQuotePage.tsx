@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
 import { OfflineIndicator } from '../components/OfflineIndicator';
 import { BORDER } from '../constants/theme';
@@ -9,7 +9,7 @@ export const QuickQuotePage = () => {
   const { updateForm } = useQuickFormStore();
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {
@@ -44,7 +44,7 @@ export const QuickQuotePage = () => {
               style={{ borderRadius: BORDER.borderRadius }}
             >
               <img
-                src="/nfl_brand_logo.png"
+                src={nflLogo}
                 alt="National FARM LIFE"
                 className="h-20 object-contain"
               />
@@ -57,7 +57,7 @@ export const QuickQuotePage = () => {
               style={{ borderRadius: BORDER.borderRadius }}
             >
               <img
-                src="/aml_brand_logo.jpg"
+                src={amlLogo}
                 alt="American FARM LIFE"
                 className="h-20 object-contain"
               />

@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import path from 'path'
-import { build } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './', // Use relative paths for Electron
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

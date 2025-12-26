@@ -1,7 +1,9 @@
 {
   "name": "nfl-web-electron",
-  "private": true,
   "version": "0.0.0",
+  "description": "NFL Web Application",
+  "author": "NFL",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,7 +21,6 @@
     "axios": "^1.13.2",
     "better-sqlite3": "^12.5.0",
     "crypto-js": "^4.2.0",
-    "electron": "^39.2.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.69.0",

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
+import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
 import { db } from "../utils/database";
 import { useQuickFormStore } from "../stores/QuickFormStore";
@@ -13,6 +14,7 @@ import { openPDFFile } from "../utils/pdf";
 
 export const EmailQuotePage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const {
     insured,
     product,
@@ -22,7 +24,6 @@ export const EmailQuotePage = () => {
     payorEnabled,
     company,
   } = useQuickFormStore();
-  
   const [agentInfo, setAgentInfo] = useState<any>(null);
   const [clientFirstName, setClientFirstName] = useState("");
   const [clientLastName, setClientLastName] = useState("");
@@ -256,7 +257,7 @@ export const EmailQuotePage = () => {
   }, [insured, product, faceAmount, paymentMode, getPremium]);
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {

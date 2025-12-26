@@ -1,4 +1,5 @@
 import { FiLogOut } from "react-icons/fi";
+import nflLogo from "/nfl_brand_logo.png";
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -10,7 +11,7 @@ export const Header = ({ onLogout }: HeaderProps) => {
       <div className="w-full flex items-center justify-between m-0">
         <div className="flex items-center gap-[3.6px]">
           <img
-            src="/nfl_brand_logo.png"
+            src={nflLogo}
             alt="National FARM • LIFE"
             className="object-contain"
             style={{ height: "64.8px" }}

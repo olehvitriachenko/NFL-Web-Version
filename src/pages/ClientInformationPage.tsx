@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
+import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
 import { useQuickFormStore } from "../stores/QuickFormStore";
 
 export const ClientInformationPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { updateConfigure } = useQuickFormStore();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -38,7 +40,7 @@ export const ClientInformationPage = () => {
   }, []);
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {
@@ -77,7 +79,7 @@ export const ClientInformationPage = () => {
     window.dispatchEvent(new Event("insuredInfoUpdated"));
     
     // Navigate back after saving
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   return (

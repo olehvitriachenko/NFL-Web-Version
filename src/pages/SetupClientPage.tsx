@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
+import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
 
 export const SetupClientPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const [effectiveStartDate, setEffectiveStartDate] = useState("2025-12-25");
   const [insuredInfo, setInsuredInfo] = useState<string | null>(null);
   const [payorInfo, setPayorInfo] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export const SetupClientPage = () => {
   }, []);
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {

@@ -7,7 +7,6 @@ import {
   FiMessageSquare,
   FiMail,
   FiFileText,
-  FiFile,
 } from "react-icons/fi";
 
 export const HomePage = () => {
@@ -55,11 +54,14 @@ export const HomePage = () => {
               label="Illustration History"
               onClick={() => navigate({ to: "/illustration-history" })}
             />
+            {/* TODO: Implement these routes */}
+            {/* 
             <MenuButton
               icon={FiFile}
               label="Generate Mock PDF"
               onClick={() => navigate({ to: "/generate-pdf" })}
-            />
+            /> 
+            */}
           </div>
         </div>
       </div>

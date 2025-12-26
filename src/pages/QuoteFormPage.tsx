@@ -74,7 +74,7 @@ export const QuoteFormPage = () => {
   }, [payorToggle, payorAge, payorSex, payorSmokingHabit, updateForm]);
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {

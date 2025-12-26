@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as QuotesMailboxRouteImport } from './routes/quotes-mailbox'
 import { Route as QuoteLifeRouteImport } from './routes/quote-life'
 import { Route as QuoteFormRouteImport } from './routes/quote-form'
 import { Route as QuoteDetailsRouteImport } from './routes/quote-details'
 import { Route as QuickQuoteRouteImport } from './routes/quick-quote'
 import { Route as PayorInformationRouteImport } from './routes/payor-information'
 import { Route as IllustrationSummaryRouteImport } from './routes/illustration-summary'
+import { Route as IllustrationHistoryRouteImport } from './routes/illustration-history'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as GeneratePdfRouteImport } from './routes/generate-pdf'
 import { Route as EmailQuoteRouteImport } from './routes/email-quote'
@@ -23,6 +25,11 @@ import { Route as ClientInformationRouteImport } from './routes/client-informati
 import { Route as AgentInfoRouteImport } from './routes/agent-info'
 import { Route as IndexRouteImport } from './routes/index'
 
+const QuotesMailboxRoute = QuotesMailboxRouteImport.update({
+  id: '/quotes-mailbox',
+  path: '/quotes-mailbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuoteLifeRoute = QuoteLifeRouteImport.update({
   id: '/quote-life',
   path: '/quote-life',
@@ -51,6 +58,11 @@ const PayorInformationRoute = PayorInformationRouteImport.update({
 const IllustrationSummaryRoute = IllustrationSummaryRouteImport.update({
   id: '/illustration-summary',
   path: '/illustration-summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IllustrationHistoryRoute = IllustrationHistoryRouteImport.update({
+  id: '/illustration-history',
+  path: '/illustration-history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -97,12 +109,14 @@ export interface FileRoutesByFullPath {
   '/email-quote': typeof EmailQuoteRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
+  '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
   '/payor-information': typeof PayorInformationRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
   '/quote-life': typeof QuoteLifeRoute
+  '/quotes-mailbox': typeof QuotesMailboxRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -112,12 +126,14 @@ export interface FileRoutesByTo {
   '/email-quote': typeof EmailQuoteRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
+  '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
   '/payor-information': typeof PayorInformationRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
   '/quote-life': typeof QuoteLifeRoute
+  '/quotes-mailbox': typeof QuotesMailboxRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,12 +144,14 @@ export interface FileRoutesById {
   '/email-quote': typeof EmailQuoteRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
+  '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
   '/payor-information': typeof PayorInformationRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
   '/quote-life': typeof QuoteLifeRoute
+  '/quotes-mailbox': typeof QuotesMailboxRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -145,12 +163,14 @@ export interface FileRouteTypes {
     | '/email-quote'
     | '/generate-pdf'
     | '/home'
+    | '/illustration-history'
     | '/illustration-summary'
     | '/payor-information'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
     | '/quote-life'
+    | '/quotes-mailbox'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -160,12 +180,14 @@ export interface FileRouteTypes {
     | '/email-quote'
     | '/generate-pdf'
     | '/home'
+    | '/illustration-history'
     | '/illustration-summary'
     | '/payor-information'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
     | '/quote-life'
+    | '/quotes-mailbox'
   id:
     | '__root__'
     | '/'
@@ -175,12 +197,14 @@ export interface FileRouteTypes {
     | '/email-quote'
     | '/generate-pdf'
     | '/home'
+    | '/illustration-history'
     | '/illustration-summary'
     | '/payor-information'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
     | '/quote-life'
+    | '/quotes-mailbox'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -191,16 +215,25 @@ export interface RootRouteChildren {
   EmailQuoteRoute: typeof EmailQuoteRoute
   GeneratePdfRoute: typeof GeneratePdfRoute
   HomeRoute: typeof HomeRoute
+  IllustrationHistoryRoute: typeof IllustrationHistoryRoute
   IllustrationSummaryRoute: typeof IllustrationSummaryRoute
   PayorInformationRoute: typeof PayorInformationRoute
   QuickQuoteRoute: typeof QuickQuoteRoute
   QuoteDetailsRoute: typeof QuoteDetailsRoute
   QuoteFormRoute: typeof QuoteFormRoute
   QuoteLifeRoute: typeof QuoteLifeRoute
+  QuotesMailboxRoute: typeof QuotesMailboxRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/quotes-mailbox': {
+      id: '/quotes-mailbox'
+      path: '/quotes-mailbox'
+      fullPath: '/quotes-mailbox'
+      preLoaderRoute: typeof QuotesMailboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quote-life': {
       id: '/quote-life'
       path: '/quote-life'
@@ -241,6 +274,13 @@ declare module '@tanstack/react-router' {
       path: '/illustration-summary'
       fullPath: '/illustration-summary'
       preLoaderRoute: typeof IllustrationSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/illustration-history': {
+      id: '/illustration-history'
+      path: '/illustration-history'
+      fullPath: '/illustration-history'
+      preLoaderRoute: typeof IllustrationHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -303,12 +343,14 @@ const rootRouteChildren: RootRouteChildren = {
   EmailQuoteRoute: EmailQuoteRoute,
   GeneratePdfRoute: GeneratePdfRoute,
   HomeRoute: HomeRoute,
+  IllustrationHistoryRoute: IllustrationHistoryRoute,
   IllustrationSummaryRoute: IllustrationSummaryRoute,
   PayorInformationRoute: PayorInformationRoute,
   QuickQuoteRoute: QuickQuoteRoute,
   QuoteDetailsRoute: QuoteDetailsRoute,
   QuoteFormRoute: QuoteFormRoute,
   QuoteLifeRoute: QuoteLifeRoute,
+  QuotesMailboxRoute: QuotesMailboxRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

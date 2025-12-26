@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
+import { navigateBack } from "../utils/navigation";
 import { BORDER } from "../constants/theme";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { useQuickFormStore } from "../stores/QuickFormStore";
 import { getIllustrationData } from "../services/illustrationSummary";
 import { shortSex } from "../utils/shortSex";
-import { calculatePrepaidPolicy, totalPrepaidNeeded } from "../services/prepayPolicy";
+import { totalPrepaidNeeded } from "../services/prepayPolicy";
 
 export const IllustrationSummaryPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const {
     insured,
     product,
@@ -245,7 +247,7 @@ export const IllustrationSummaryPage = () => {
   }, [insured, product, faceAmount, paymentMode, getPremium]);
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {

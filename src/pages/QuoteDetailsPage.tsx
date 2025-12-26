@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
+import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
 import { useQuickFormStore } from "../stores/QuickFormStore";
 import type { Requirement } from "../services/qualificationExaminations";
@@ -19,6 +20,7 @@ const formatNumber = (num: number): string => {
 
 export const QuoteDetailsPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { 
     insured, 
     payorEnabled,
@@ -69,7 +71,7 @@ export const QuoteDetailsPage = () => {
   }, [getPremium, getExaminations]);
 
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {
