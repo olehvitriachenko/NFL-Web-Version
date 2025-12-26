@@ -86,8 +86,8 @@ export function generatePDFHTMLTemplate(params: TemplateParams): string {
     } else {
       // Try to get examinations for other products
       const productCode = getProductShortCode(productNameForIllustration);
-      if (productCode) {
-        const examResults = getRequiredExaminations(productCode, insuredAge, faceAmount, insuredGender);
+      if (productCode && (productCode === 'PWL' || productCode === 'SelectTerm')) {
+        const examResults = getRequiredExaminations(productCode as 'PWL' | 'SelectTerm', insuredAge, faceAmount, insuredGender);
         examinations.push(...examResults.map(exam => exam.text));
       }
     }

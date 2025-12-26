@@ -59,6 +59,7 @@ export interface ElectronAPI {
       printBackground?: boolean;
     }) => Promise<{ success: boolean; data?: Buffer; error?: string }>;
     saveFile: (pdfBuffer: Buffer, defaultFileName?: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+    openFile: (filePath: string) => Promise<{ success: boolean; error?: string }>;
   };
 }
 

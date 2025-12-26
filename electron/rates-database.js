@@ -522,7 +522,7 @@ export class RatesDatabase {
     /**
      * Получение Paid-Up Addition Dividend Rates
      */
-    getPaidUpAdditionDividendRates(planCode, sex, risk, minIssueAge, maxIssueAge) {
+    getPaidUpAdditionDividendRates(planCode, sex, _risk, minIssueAge, maxIssueAge) {
         const db = this.getDb();
         // PUA dividend rates всегда используют Risk IS NULL (не параметр)
         const query = `
@@ -544,7 +544,7 @@ export class RatesDatabase {
     /**
      * Получение Cash Rates
      */
-    getCashRates(planCode, sex, issueAge, risk) {
+    getCashRates(planCode, sex, issueAge, _risk) {
         const db = this.getDb();
         // Cash rates всегда используют Risk IS NULL (не параметр)
         // Но для получения конкретного duration нужно использовать getIllustrationFactor

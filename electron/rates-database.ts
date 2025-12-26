@@ -705,7 +705,7 @@ export class RatesDatabase {
   getPaidUpAdditionDividendRates(
     planCode: string,
     sex: Gender,
-    risk: SmokingStatus | null,
+    _risk: SmokingStatus | null,
     minIssueAge: number,
     maxIssueAge: number
   ): Array<{ IssueAge: number; Factor: number }> {
@@ -737,7 +737,7 @@ export class RatesDatabase {
     planCode: string,
     sex: Gender,
     issueAge: number,
-    risk: SmokingStatus | null
+    _risk: SmokingStatus | null
   ): Array<{ Duration: number; Factor: number }> {
     const db = this.getDb();
     

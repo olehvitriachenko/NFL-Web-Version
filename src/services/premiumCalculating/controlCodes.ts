@@ -320,27 +320,24 @@ export function getWSPTermControlCode(
  * Check if product is a term product
  */
 export function isTermProduct(productType: ProductType): boolean {
-  return [
-    ProductType.LegacyTerm10,
-    ProductType.LegacyTerm20,
-    ProductType.LegacyTerm30,
-    ProductType.SelectTerm10,
-    ProductType.SelectTerm15,
-    ProductType.SelectTerm20,
-    ProductType.SelectTerm30,
-    ProductType.WorkSitePlusTerm
-  ].includes(productType);
+  return (
+    productType === ProductType.SelectTerm10 ||
+    productType === ProductType.SelectTerm15 ||
+    productType === ProductType.SelectTerm20 ||
+    productType === ProductType.SelectTerm30 ||
+    productType === ProductType.WorkSitePlusTerm
+  );
 }
 
 /**
  * Check if product uses band pricing
  */
 export function usesBandPricing(productType: ProductType): boolean {
-  return [
-    ProductType.LegacyTerm10,
-    ProductType.LegacyTerm20,
-    ProductType.LegacyTerm30
-  ].includes(productType);
+  return (
+    productType === ProductType.LegacyTerm10 ||
+    productType === ProductType.LegacyTerm20 ||
+    productType === ProductType.LegacyTerm30
+  );
 }
 
 /**
@@ -360,7 +357,7 @@ export function validateControlCodeParams(params: ControlCodeSelector): void {
     throw new Error(`Invalid product type: ${productType}`);
   }
 
-  if (![Gender.Male, Gender.Female].includes(gender)) {
+  if (gender !== Gender.Male && gender !== Gender.Female) {
     throw new Error(`Invalid gender: ${gender}`);
   }
 

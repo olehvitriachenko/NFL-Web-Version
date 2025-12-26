@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
+import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
 import { useQuickFormStore } from "../stores/QuickFormStore";
 
 export const QuoteFormPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { insured, payorEnabled, payor, updateForm } = useQuickFormStore();
 
   // Функция для нормализации smoking habit (приводит к формату опций select)

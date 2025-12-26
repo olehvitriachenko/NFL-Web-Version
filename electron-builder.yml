@@ -8,6 +8,7 @@ directories:
 files:
   - dist/**/*
   - dist-electron/**/*
+  - electron/**/*
   - package.json
   - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
   - "!.editorconfig"
