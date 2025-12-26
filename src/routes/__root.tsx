@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
-import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router';
-import { saveCurrentPath } from '../utils/navigation';
+import { createRootRoute, Outlet } from '@tanstack/react-router';
 
 export const Route = createRootRoute({
   component: () => {

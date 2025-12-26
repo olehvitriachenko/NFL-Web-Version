@@ -18,6 +18,7 @@ import { Route as PayorInformationRouteImport } from './routes/payor-information
 import { Route as IllustrationSummaryRouteImport } from './routes/illustration-summary'
 import { Route as IllustrationHistoryRouteImport } from './routes/illustration-history'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as GeneratePdfRouteImport } from './routes/generate-pdf'
 import { Route as EmailQuoteRouteImport } from './routes/email-quote'
 import { Route as ConfigureQuoteRouteImport } from './routes/configure-quote'
 import { Route as ClientInformationRouteImport } from './routes/client-information'
@@ -69,6 +70,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GeneratePdfRoute = GeneratePdfRouteImport.update({
+  id: '/generate-pdf',
+  path: '/generate-pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmailQuoteRoute = EmailQuoteRouteImport.update({
   id: '/email-quote',
   path: '/email-quote',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/client-information': typeof ClientInformationRoute
   '/configure-quote': typeof ConfigureQuoteRoute
   '/email-quote': typeof EmailQuoteRoute
+  '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/client-information': typeof ClientInformationRoute
   '/configure-quote': typeof ConfigureQuoteRoute
   '/email-quote': typeof EmailQuoteRoute
+  '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/client-information': typeof ClientInformationRoute
   '/configure-quote': typeof ConfigureQuoteRoute
   '/email-quote': typeof EmailQuoteRoute
+  '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/client-information'
     | '/configure-quote'
     | '/email-quote'
+    | '/generate-pdf'
     | '/home'
     | '/illustration-history'
     | '/illustration-summary'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/client-information'
     | '/configure-quote'
     | '/email-quote'
+    | '/generate-pdf'
     | '/home'
     | '/illustration-history'
     | '/illustration-summary'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/client-information'
     | '/configure-quote'
     | '/email-quote'
+    | '/generate-pdf'
     | '/home'
     | '/illustration-history'
     | '/illustration-summary'
@@ -201,6 +213,7 @@ export interface RootRouteChildren {
   ClientInformationRoute: typeof ClientInformationRoute
   ConfigureQuoteRoute: typeof ConfigureQuoteRoute
   EmailQuoteRoute: typeof EmailQuoteRoute
+  GeneratePdfRoute: typeof GeneratePdfRoute
   HomeRoute: typeof HomeRoute
   IllustrationHistoryRoute: typeof IllustrationHistoryRoute
   IllustrationSummaryRoute: typeof IllustrationSummaryRoute
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/generate-pdf': {
+      id: '/generate-pdf'
+      path: '/generate-pdf'
+      fullPath: '/generate-pdf'
+      preLoaderRoute: typeof GeneratePdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/email-quote': {
       id: '/email-quote'
       path: '/email-quote'
@@ -321,6 +341,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientInformationRoute: ClientInformationRoute,
   ConfigureQuoteRoute: ConfigureQuoteRoute,
   EmailQuoteRoute: EmailQuoteRoute,
+  GeneratePdfRoute: GeneratePdfRoute,
   HomeRoute: HomeRoute,
   IllustrationHistoryRoute: IllustrationHistoryRoute,
   IllustrationSummaryRoute: IllustrationSummaryRoute,

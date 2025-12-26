@@ -2,13 +2,11 @@ import { useNavigate, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
 import { OfflineIndicator } from '../components/OfflineIndicator';
 import { BORDER } from '../constants/theme';
-import { navigateBack } from '../utils/navigation';
-import nflLogo from "/nfl_brand_logo.png";
-import amlLogo from "/aml_brand_logo.jpg";
+import { useQuickFormStore } from '../stores/QuickFormStore';
 
 export const QuickQuotePage = () => {
   const navigate = useNavigate();
-  const router = useRouter();
+  const { updateForm } = useQuickFormStore();
 
   const handleBack = () => {
     navigateBack(router, () => navigate({ to: '/home' }));
@@ -19,6 +17,12 @@ export const QuickQuotePage = () => {
   };
 
   const handleCompanySelect = (company: 'nfl' | 'aml') => {
+    // Маппинг: nfl -> CompanyA (National Farm Life), aml -> CompanyB (American Farm Life)
+    const companyStoreValue: 'CompanyA' | 'CompanyB' = company === 'nfl' ? 'CompanyA' : 'CompanyB';
+    
+    // Сохраняем выбранную компанию в стор
+    updateForm({ company: companyStoreValue });
+    
     // Navigate to quote form with selected company
     navigate({ to: '/quote-form', search: { company } });
   };
