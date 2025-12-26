@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
 import { FormField } from '../components/FormField';
 import { Button } from '../components/Button';
 import { OfflineIndicator } from '../components/OfflineIndicator';
+import { navigateBack } from '../utils/navigation';
 import { db } from '../utils/database';
 import type { AgentInfo } from '../types/agent';
 
 export const AgentInfoPage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const [formData, setFormData] = useState<AgentInfo>({
     firstName: '',
     lastName: '',
@@ -110,24 +112,8 @@ export const AgentInfoPage = () => {
     }
   };
 
-  const handleEdit = (agent: AgentInfo & { id: number; createdAt: string }) => {
-    setFormData({
-      firstName: agent.firstName,
-      lastName: agent.lastName,
-      street: agent.street,
-      city: agent.city,
-      state: agent.state,
-      zipCode: agent.zipCode,
-      phone: agent.phone,
-      email: agent.email,
-    });
-    setEditingId(agent.id);
-    // Scroll to form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const handleBack = () => {
-    window.history.back();
+    navigateBack(router, () => navigate({ to: '/home' }));
   };
 
   const handleHome = () => {
@@ -135,7 +121,6 @@ export const AgentInfoPage = () => {
   };
 
   const [agents, setAgents] = useState<(AgentInfo & { id: number; createdAt: string })[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadAgents();
@@ -143,7 +128,6 @@ export const AgentInfoPage = () => {
 
   const loadAgents = async () => {
     try {
-      setLoading(true);
       await db.init();
       const allAgents = await db.getAllAgents();
       setAgents(allAgents);
@@ -166,33 +150,6 @@ export const AgentInfoPage = () => {
       }
     } catch (error) {
       console.error('Error loading agents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this agent?')) {
-      try {
-        await db.deleteAgent(id);
-        await loadAgents();
-        if (editingId === id) {
-          setFormData({
-            firstName: '',
-            lastName: '',
-            street: '',
-            city: '',
-            state: '',
-            zipCode: '',
-            phone: '',
-            email: '',
-          });
-          setEditingId(null);
-        }
-      } catch (error) {
-        console.error('Error deleting agent:', error);
-        alert('Failed to delete agent');
-      }
     }
   };
 
