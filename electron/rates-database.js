@@ -237,12 +237,15 @@ export class RatesDatabase {
      */
     getIllustrationFactor(params) {
         const db = this.getDb();
+        // Для cash rates всегда Risk IS NULL, для других может быть risk
+        const isCash = params.kind === 'cash';
+        const riskCondition = (isCash || !params.risk) ? 'Risk IS NULL' : 'Risk = ?';
         const sexCondition = params.sex ? `Sex = ?` : 'Sex IS NULL';
-        const riskCondition = params.risk ? `Risk = ?` : 'Risk IS NULL';
         const durationCondition = params.duration === null || params.duration === undefined
             ? 'Duration = 0'
             : 'Duration = ?';
-        let query = `
+        // Порядок параметров: kind, planCode, sex (если есть), issueAge, duration (если есть), risk (если есть и не cash)
+        const query = `
       SELECT Factor
       FROM IllustrationTable
       WHERE Kind = ?
@@ -254,18 +257,15 @@ export class RatesDatabase {
       LIMIT 1;
     `.trim();
         const stmt = db.prepare(query);
-        const paramsArray = [
-            params.kind,
-            params.planCode,
-            params.issueAge
-        ];
+        const paramsArray = [params.kind, params.planCode];
         if (params.sex) {
             paramsArray.push(params.sex);
         }
+        paramsArray.push(params.issueAge);
         if (params.duration !== null && params.duration !== undefined) {
             paramsArray.push(params.duration);
         }
-        if (params.risk) {
+        if (!isCash && params.risk) {
             paramsArray.push(params.risk);
         }
         const result = stmt.get(...paramsArray);
@@ -276,26 +276,24 @@ export class RatesDatabase {
      */
     getAllIllustrationFactors(planCode, kind, sex, issueAge, risk) {
         const db = this.getDb();
-        const sexCondition = sex ? `Sex = ?` : 'Sex IS NULL';
-        const riskCondition = risk ? `Risk = ?` : 'Risk IS NULL';
+        // Для 'div' и 'cash' всегда Risk IS NULL, для других может быть risk
+        const isDivOrCash = kind === 'div' || kind === 'cash';
+        const riskCondition = (isDivOrCash || !risk) ? 'Risk IS NULL' : 'Risk = ?';
+        const paramsArray = [kind, planCode, sex, issueAge];
+        if (!isDivOrCash && risk) {
+            paramsArray.push(risk);
+        }
         const query = `
       SELECT Duration, Factor
       FROM IllustrationTable
       WHERE Kind = ?
         AND PlanCode = ?
-        AND ${sexCondition}
+        AND Sex = ?
         AND IssueAge = ?
         AND ${riskCondition}
       ORDER BY Duration;
     `.trim();
         const stmt = db.prepare(query);
-        const paramsArray = [kind, planCode, issueAge];
-        if (sex) {
-            paramsArray.push(sex);
-        }
-        if (risk) {
-            paramsArray.push(risk);
-        }
         return stmt.all(...paramsArray);
     }
     /**
@@ -526,11 +524,7 @@ export class RatesDatabase {
      */
     getPaidUpAdditionDividendRates(planCode, sex, risk, minIssueAge, maxIssueAge) {
         const db = this.getDb();
-        const riskCondition = risk ? `Risk = ?` : 'Risk IS NULL';
-        const params = [planCode, sex, minIssueAge, maxIssueAge];
-        if (risk) {
-            params.splice(2, 0, risk);
-        }
+        // PUA dividend rates всегда используют Risk IS NULL (не параметр)
         const query = `
       SELECT IssueAge, Factor
       FROM IllustrationTable
@@ -538,25 +532,23 @@ export class RatesDatabase {
         PlanCode = ? AND
         Kind = 'pua_div' AND
         Sex = ? AND
-        ${riskCondition} AND
+        Risk IS NULL AND
         Duration = 0 AND
         IssueAge > ? AND
         IssueAge <= ?
       ORDER BY IssueAge ASC;
     `.trim();
         const stmt = db.prepare(query);
-        return stmt.all(...params);
+        return stmt.all(planCode, sex, minIssueAge, maxIssueAge);
     }
     /**
      * Получение Cash Rates
      */
     getCashRates(planCode, sex, issueAge, risk) {
         const db = this.getDb();
-        const riskCondition = risk ? `Risk = ?` : 'Risk IS NULL';
-        const params = [planCode, sex, issueAge];
-        if (risk) {
-            params.push(risk);
-        }
+        // Cash rates всегда используют Risk IS NULL (не параметр)
+        // Но для получения конкретного duration нужно использовать getIllustrationFactor
+        // Этот метод возвращает все durations для данного issueAge
         const query = `
       SELECT Duration, Factor
       FROM IllustrationTable
@@ -565,17 +557,19 @@ export class RatesDatabase {
         Kind = 'cash' AND
         Sex = ? AND
         IssueAge = ? AND
-        ${riskCondition}
+        Risk IS NULL
       ORDER BY Duration ASC;
     `.trim();
         const stmt = db.prepare(query);
-        return stmt.all(...params);
+        return stmt.all(planCode, sex, issueAge);
     }
     /**
      * Получение NSP Rate
      */
     getNSPRate(planCode, sex, issueAge, risk) {
         const db = this.getDb();
+        // NSP Rate использует IssueAge = year + issueAge (передается уже вычисленный возраст)
+        // Но здесь issueAge уже должен быть вычисленным (age + year)
         const query = `
       SELECT Factor
       FROM IllustrationTable

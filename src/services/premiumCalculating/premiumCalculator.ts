@@ -20,12 +20,13 @@ import {
   getRiskRatingFactor,
 } from './queries';
 
-// Mode factor multipliers for non-standard payment modes
+// Mode factor multipliers for non-standard payment modes (from monthly premium)
+// These multipliers convert monthly premium to the corresponding payment mode
 const modeFactor: Record<string, number> = {
-  'EveryFourWeeks': 12 / 13,
-  'SemiMonthly': 24 / 12,
-  'BiWeekly': 26 / 12,
-  'Weekly': 52 / 12
+  'EveryFourWeeks': 12 / 13,  // 12 monthly payments / 13 four-weekly payments
+  'SemiMonthly': 1 / 2,       // Semi-monthly: monthly premium / 2
+  'BiWeekly': 12 / 26,        // Bi-weekly: monthly premium * 12 / 26
+  'Weekly': 12 / 52           // Weekly: monthly premium * 12 / 52
 };
 
 // ==================== MAIN CALCULATOR ====================
@@ -75,8 +76,13 @@ export async function calculatePremium(
     paymentMethod: policy.paymentMethod
   };
 
-  // For term products, add duration
-  const rate = isTermProduct(policy.productType)
+  // For dependent child and guaranteed insurability, always use getRate (not getTermRate)
+  // because they have special queries in the database
+  const isRiderControlCode = controlCode === RIDER_CONTROL_CODES.DEPENDENT_CHILD || 
+                              controlCode === RIDER_CONTROL_CODES.GUARANTEED_INSURABILITY;
+
+  // For term products, add duration (unless it's a rider control code)
+  const rate = isTermProduct(policy.productType) && !isRiderControlCode
     ? await getTermRate({ ...rateParams, duration })
     : await getRate(rateParams);
 

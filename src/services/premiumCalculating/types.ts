@@ -18,11 +18,11 @@ export type Gender = typeof Gender[keyof typeof Gender];
 
 /**
  * Smoking Status constants
- * Note: Database uses 'Y' for Smoker and 'N' for Non-smoker
+ * Note: Database uses 'S' for Smoker and 'N' for Non-smoker
  */
 export const SmokingStatus = {
   NonSmoker: 'N',
-  Smoker: 'Y'
+  Smoker: 'S'
 } as const;
 
 export type SmokingStatus = typeof SmokingStatus[keyof typeof SmokingStatus];

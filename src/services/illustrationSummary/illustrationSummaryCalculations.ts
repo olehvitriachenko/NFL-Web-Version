@@ -48,7 +48,8 @@ async function getRates(params: {
   const baseDividendRates = await getBaseDividendRates({
     planCode: params.planCode,
     sex: params.sex,
-    issueAge: params.issueAge
+    issueAge: params.issueAge,
+    risk: params.risk
   });
 
   // Get PUA premium rates

@@ -1,11 +1,72 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { BORDER, COLORS } from "../constants/theme";
+import { useQuickFormStore } from "../stores/QuickFormStore";
+import type { Requirement } from "../services/qualificationExaminations";
+
+// Helper function to format number with commas and decimals
+const formatCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+// Helper function to format number with commas
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('en-US');
+};
 
 export const QuoteDetailsPage = () => {
   const navigate = useNavigate();
+  const { 
+    insured, 
+    payorEnabled,
+    payor,
+    product, 
+    faceAmount, 
+    paymentMode, 
+    paymentMethod,
+    waiverOfPremiumEnabled,
+    accidentalDeathEnabled,
+    accidentalDeath,
+    dependentChildEnabled,
+    dependentChild,
+    guaranteedInsurabilityEnabled,
+    guaranteedInsurability,
+    getPremium,
+    getExaminations
+  } = useQuickFormStore();
+
+  const [premiumResult, setPremiumResult] = useState<{
+    premiumBasicRate: number;
+    premiumWOP?: number;
+    premiumAcidentalDeth?: number;
+    premiumDependentChild?: number;
+    premiumGuaranteedInsurability?: number;
+    totalPremium: number;
+    totalAnnualPremium: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [examinations, setExaminations] = useState<Requirement[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const premium = await getPremium();
+        setPremiumResult(premium);
+        
+        const exams = getExaminations();
+        setExaminations(exams);
+      } catch (error) {
+        console.error("Error loading quote data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [getPremium, getExaminations]);
 
   const handleBack = () => {
     window.history.back();
@@ -19,37 +80,65 @@ export const QuoteDetailsPage = () => {
     navigate({ to: "/illustration-summary" });
   };
 
-  // Mock data - will be replaced with API data
-  const quoteData = {
-    insured: {
-      age: 30,
-      sex: "Male",
-      smokingHabit: "Non smoker",
-    },
-    product: {
-      product: "PWL - Participating Whole Life",
-      faceAmount: "$10,000.00",
-      premium: "$14.73",
-      paymentMode: "Monthly",
-      paymentMethod: "Regular",
-    },
-    riders: [
-      {
-        option: "Base Plan",
-        faceAmount: "$10,000.00",
-        premium: "$14.73",
-      },
-    ],
-  };
+  if (loading || !premiumResult || !insured) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">Loading quote data...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const totalFaceAmount = quoteData.riders.reduce(
-    (sum, rider) => sum + parseFloat(rider.faceAmount.replace(/[$,]/g, "")),
-    0
-  );
-  const totalPremium = quoteData.riders.reduce(
-    (sum, rider) => sum + parseFloat(rider.premium.replace(/[$,]/g, "")),
-    0
-  );
+  // Build riders array
+  const riders: Array<{ option: string; faceAmount: number; premium: number }> = [];
+  
+  // Base Plan
+  riders.push({
+    option: "Base Plan",
+    faceAmount: faceAmount || 0,
+    premium: premiumResult.premiumBasicRate || 0,
+  });
+
+  // Waiver of Premium
+  if (waiverOfPremiumEnabled && premiumResult.premiumWOP) {
+    riders.push({
+      option: "Waiver of Premium",
+      faceAmount: faceAmount || 0,
+      premium: premiumResult.premiumWOP,
+    });
+  }
+
+  // Accidental Death
+  if (accidentalDeathEnabled && accidentalDeath?.value && premiumResult.premiumAcidentalDeth) {
+    const adType = accidentalDeath.type === 'ADB' ? 'ADB' : 'ADD';
+    riders.push({
+      option: `Accidental Death (${adType})`,
+      faceAmount: accidentalDeath.value,
+      premium: premiumResult.premiumAcidentalDeth,
+    });
+  }
+
+  // Dependent Child
+  if (dependentChildEnabled && dependentChild && premiumResult.premiumDependentChild) {
+    riders.push({
+      option: "Dependent Child",
+      faceAmount: dependentChild,
+      premium: premiumResult.premiumDependentChild,
+    });
+  }
+
+  // Guaranteed Insurability
+  if (guaranteedInsurabilityEnabled && guaranteedInsurability && premiumResult.premiumGuaranteedInsurability) {
+    riders.push({
+      option: "Guaranteed Insurability",
+      faceAmount: guaranteedInsurability,
+      premium: premiumResult.premiumGuaranteedInsurability,
+    });
+  }
+
+  const totalFaceAmount = riders.reduce((sum, rider) => sum + rider.faceAmount, 0);
+  const totalPremium = riders.reduce((sum, rider) => sum + rider.premium, 0);
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
@@ -68,18 +157,39 @@ export const QuoteDetailsPage = () => {
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Age:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.insured.age} years</span>
+                  <span className="text-[#000000] font-medium">{insured.age} years</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Sex:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.insured.sex}</span>
+                  <span className="text-[#000000] font-medium">{insured.sex}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Smoking Habit:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.insured.smokingHabit}</span>
+                  <span className="text-[#000000] font-medium">{insured.smokingHabit}</span>
                 </div>
               </div>
             </div>
+
+            {/* Payor Summary */}
+            {payorEnabled && payor && (
+              <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
+                <h2 className="text-xl font-bold text-[#000000] mb-4">Payor Summary</h2>
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Age:</span>
+                    <span className="text-[#000000] font-medium">{payor.age} years</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Sex:</span>
+                    <span className="text-[#000000] font-medium">{payor.sex}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Smoking Habit:</span>
+                    <span className="text-[#000000] font-medium">{payor.smokingHabit}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Product Summary */}
             <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
@@ -87,23 +197,23 @@ export const QuoteDetailsPage = () => {
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Product:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.product.product}</span>
+                  <span className="text-[#000000] font-medium">{product}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Face Amount:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.product.faceAmount}</span>
+                  <span className="text-[#000000] font-medium">${formatNumber(faceAmount || 0)}.00</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Premium:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.product.premium}</span>
+                  <span className="text-[#000000] font-medium">${formatCurrency(premiumResult.totalPremium || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Payment Mode:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.product.paymentMode}</span>
+                  <span className="text-[#000000] font-medium">{paymentMode}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Payment Method:</span>
-                  <span className="text-[#000000] font-medium">{quoteData.product.paymentMethod}</span>
+                  <span className="text-[#000000] font-medium">{paymentMethod}</span>
                 </div>
               </div>
             </div>
@@ -121,17 +231,17 @@ export const QuoteDetailsPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {quoteData.riders.map((rider, index) => (
+                    {riders.map((rider, index) => (
                       <tr key={index} className="border-b border-gray-100">
                         <td className="py-3 px-4 text-[#000000]">{rider.option}</td>
-                        <td className="py-3 px-4 text-right text-[#000000]">{rider.faceAmount}</td>
-                        <td className="py-3 px-4 text-right text-[#000000]">{rider.premium}</td>
+                        <td className="py-3 px-4 text-right text-[#000000]">${formatNumber(rider.faceAmount)}.00</td>
+                        <td className="py-3 px-4 text-right text-[#000000]">${formatCurrency(rider.premium)}</td>
                       </tr>
                     ))}
                     <tr className="border-t-2 border-gray-300 font-semibold">
                       <td className="py-3 px-4 text-[#000000]">Total</td>
-                      <td className="py-3 px-4 text-right text-[#000000]">${totalFaceAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td className="py-3 px-4 text-right text-[#000000]">${totalPremium.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="py-3 px-4 text-right text-[#000000]">${formatNumber(totalFaceAmount)}.00</td>
+                      <td className="py-3 px-4 text-right text-[#000000]">${formatCurrency(totalPremium)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -141,7 +251,17 @@ export const QuoteDetailsPage = () => {
             {/* Examinations */}
             <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
               <h2 className="text-xl font-bold text-[#000000] mb-4">Examinations</h2>
-              <p className="text-gray-500 text-sm">No examinations required</p>
+              {examinations.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {examinations.map((exam, index) => (
+                    <div key={index} className="text-[#000000]">
+                      {exam.text}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No examinations required</p>
+              )}
             </div>
 
             {/* Illustrate Button */}

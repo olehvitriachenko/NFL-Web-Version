@@ -5,8 +5,8 @@
 
 import {
   calculatePremiumForState,
-  QuickFormState,
 } from '../../stores/QuickFormStore';
+import type { QuickFormState } from '../../stores/QuickFormStore';
 
 /**
  * Calculate adjusted accidental death value based on current face amount

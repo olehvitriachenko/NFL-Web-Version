@@ -85,6 +85,7 @@ export function getPWLControlCode(
   smokingStatus: SmokingStatus
 ): ControlCode {
   const genderKey = gender === Gender.Male ? 'M' : 'F';
+  // Convert 'S' to 'Y' for control code keys (MY, FY, etc.)
   const smokingKey = smokingStatus === SmokingStatus.NonSmoker ? 'N' : 'Y';
   const key = `${genderKey}_${smokingKey}`;
   

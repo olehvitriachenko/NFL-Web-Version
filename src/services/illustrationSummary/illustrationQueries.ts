@@ -3,8 +3,6 @@
  * Additional queries for illustration calculations
  */
 
-import { Gender, SmokingStatus } from '../premiumCalculating/types';
-
 // Check if running in Electron
 const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
 
@@ -21,12 +19,12 @@ export async function getCashRatesAll(params: {
   }
 
   try {
-    const result = await window.electron.rates.getCashRates({
-      planCode: params.planCode,
-      sex: params.sex,
-      issueAge: params.issueAge,
-      risk: null
-    });
+    const result = await window.electron.rates.getCashRates(
+      params.planCode,
+      params.sex,
+      params.issueAge,
+      null
+    );
 
     if (!result.success || !result.data) {
       return [];
@@ -73,12 +71,12 @@ export async function getNSPRate(params: {
   }
 
   try {
-    const result = await window.electron.rates.getNSPRate({
-      planCode: params.planCode,
-      sex: params.sex,
-      issueAge: params.issueAge + params.year,
-      risk: params.risk
-    });
+    const result = await window.electron.rates.getNSPRate(
+      params.planCode,
+      params.sex,
+      params.issueAge + params.year,
+      params.risk
+    );
 
     if (!result.success) {
       return 0;
@@ -106,13 +104,13 @@ export async function getPaidUpAdditionPremiumRates(params: {
   }
 
   try {
-    const result = await window.electron.rates.getPaidUpAdditionPremiumRates({
-      planCode: params.planCode,
-      sex: params.sex,
-      risk: params.risk,
-      minIssueAge: params.minIssueAge,
-      maxIssueAge: params.maxIssueAge
-    });
+    const result = await window.electron.rates.getPaidUpAdditionPremiumRates(
+      params.planCode,
+      params.sex,
+      params.risk,
+      params.minIssueAge,
+      params.maxIssueAge
+    );
 
     if (!result.success || !result.data) {
       return {};
@@ -145,13 +143,13 @@ export async function getPaidUpAdditionDividendRates(params: {
   }
 
   try {
-    const result = await window.electron.rates.getPaidUpAdditionDividendRates({
-      planCode: params.planCode,
-      sex: params.sex,
-      risk: params.risk,
-      minIssueAge: params.minIssueAge,
-      maxIssueAge: params.maxIssueAge
-    });
+    const result = await window.electron.rates.getPaidUpAdditionDividendRates(
+      params.planCode,
+      params.sex,
+      params.risk,
+      params.minIssueAge,
+      params.maxIssueAge
+    );
 
     if (!result.success || !result.data) {
       return {};
@@ -176,6 +174,7 @@ export async function getBaseDividendRates(params: {
   planCode: string;
   sex: 'M' | 'F';
   issueAge: number;
+  risk: 'N' | 'S';
 }): Promise<Array<{ duration: number; rate: number }>> {
   if (!isElectron || !window.electron?.rates) {
     throw new Error('Electron IPC not available. This function requires Electron.');
@@ -187,7 +186,7 @@ export async function getBaseDividendRates(params: {
       'div',
       params.sex,
       params.issueAge,
-      null
+      params.risk
     );
 
     if (!result.success || !result.data) {

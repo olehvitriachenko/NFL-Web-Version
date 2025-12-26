@@ -149,7 +149,7 @@ export const calculatePremiumForState = async (state: QuickFormState): Promise<P
     faceAmount: state.faceAmount,
     age: state.insured.age,
     gender: shortSex(state.insured.sex),
-    smokingStatus: shortSmokingStatus(state.insured.smokingHabit),
+    smokingStatus: shortSmokingStatus(state.insured.smokingHabit) as 'S' | 'N',
     paymentMode: convertPaymentMode(state.paymentMode),
     paymentMethod: convertPaymentMethod(state.paymentMethod),
     tableRating: state.tableRating && state.tableRating > 0 ? state.tableRating : undefined,

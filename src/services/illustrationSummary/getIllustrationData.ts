@@ -55,7 +55,7 @@ export const getIllustrationData = async (
   product: string,
   paymentMode: string = 'Monthly'
 ): Promise<Record<string, any>> => {
-  const { totalPremium, totalAnnualPremium } = await getPremium();
+  const { totalPremium } = await getPremium();
 
   // Convert to monthly premium
   const monthlyPremium = convertToMonthly(totalPremium, paymentMode);
@@ -242,9 +242,57 @@ export const getIllustrationData = async (
     }
   }
 
-  // Calculate target year (121 - insured.age)
+  // Ensure 20 years is calculated (if not already in availableYears)
+  if (!availableYears.includes(20) && insured.age + 20 <= MAX_AGE) {
+    try {
+      const age20Data = await calculateAgeData(20);
+      results['age20'] = age20Data;
+    } catch (error) {
+      console.warn(`[Illustration] Failed to calculate data for 20 years:`, error);
+      results['age20'] = {
+        premiums: {
+          guaranteed: Math.round(20 * 12 * monthlyPremium),
+          midpoint: '',
+          current: '',
+        },
+        deathBenefit: {
+          guaranteed: baseAmount,
+          midpoint: '',
+          current: '',
+        },
+      };
+    }
+  }
+
+  // Calculate for age 70 (70 - insured.age years)
+  const age70Years = 70 - insured.age;
+  if (age70Years > 0 && insured.age + age70Years <= MAX_AGE) {
+    try {
+      const age70Data = await calculateAgeData(age70Years);
+      results['age70'] = age70Data;
+    } catch (error) {
+      console.warn(`[Illustration] Failed to calculate data for age 70 (${age70Years} years):`, error);
+      results['age70'] = {
+        premiums: {
+          guaranteed: Math.round(age70Years * 12 * monthlyPremium),
+          midpoint: '',
+          current: '',
+        },
+        deathBenefit: {
+          guaranteed: baseAmount,
+          midpoint: '',
+          current: '',
+        },
+      };
+    }
+  }
+
+  // Calculate target year (121 - insured.age) only if it's not already in other sections
   const targetYear = 121 - insured.age;
-  if (targetYear > 0 && ![5, 10, 20, 70].includes(targetYear)) {
+  const existingYears = [5, 10, 20, age70Years];
+  
+  // Only calculate if target year is unique and not already covered
+  if (targetYear > 0 && !existingYears.includes(targetYear)) {
     try {
       const targetYearData = await calculateAgeData(targetYear);
       results['targetYear'] = targetYearData;
