@@ -102,17 +102,40 @@ export async function generateAndSavePDF(
 }
 
 /**
- * Open PDF file in system default application
+ * Open PDF file in system default application or in-app viewer
  * @param filePath - Path to PDF file
+ * @param openInApp - If true, opens in app viewer instead of system app
+ * @param router - Optional router instance for navigation
  * @returns Promise with success status
  */
-export async function openPDFFile(filePath: string): Promise<boolean> {
+export async function openPDFFile(
+  filePath: string, 
+  openInApp: boolean = true,
+  router?: any
+): Promise<boolean> {
   if (!isElectron) {
     console.warn('PDF opening is only available in Electron environment');
     return false;
   }
 
   try {
+    // Якщо openInApp = true, відкриваємо в додатку
+    if (openInApp) {
+      // Використовуємо router для навігації до PDF viewer
+      if (router) {
+        router.navigate({ 
+          to: '/pdf-viewer', 
+          search: { file: filePath } 
+        });
+      } else {
+        // Fallback на window.location якщо router не передано
+        const pdfUrl = `/pdf-viewer?file=${encodeURIComponent(filePath)}`;
+        window.location.href = pdfUrl;
+      }
+      return true;
+    }
+
+    // Інакше відкриваємо в системному переглядачі
     const result = await window.electron!.pdf.openFile(filePath);
     
     if (!result.success) {

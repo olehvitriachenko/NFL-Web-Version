@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('electron', {
     }) => ipcRenderer.invoke('pdf:generateFromHTML', htmlContent, options),
     saveFile: (pdfBuffer: Buffer, defaultFileName?: string) => ipcRenderer.invoke('pdf:saveFile', pdfBuffer, defaultFileName),
     openFile: (filePath: string) => ipcRenderer.invoke('pdf:openFile', filePath),
+    readFile: (filePath: string) => ipcRenderer.invoke('pdf:readFile', filePath),
   },
 });
 
@@ -118,21 +119,22 @@ declare global {
         tableExists: (tableName: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
         getTableRecordCount: (tableName: string) => Promise<{ success: boolean; data?: number; error?: string }>;
       };
-      pdf: {
-        generateFromHTML: (htmlContent: string, options?: {
-          margins?: {
-            top?: number;
-            bottom?: number;
-            left?: number;
-            right?: number;
-          };
-          pageSize?: 'A4' | 'Letter' | 'Legal' | 'Tabloid' | 'Ledger' | 'A3' | 'A5' | 'A6';
-          landscape?: boolean;
-          printBackground?: boolean;
-        }) => Promise<{ success: boolean; data?: Buffer; error?: string }>;
-        saveFile: (pdfBuffer: Buffer, defaultFileName?: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
-        openFile: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+  pdf: {
+    generateFromHTML: (htmlContent: string, options?: {
+      margins?: {
+        top?: number;
+        bottom?: number;
+        left?: number;
+        right?: number;
       };
+      pageSize?: 'A4' | 'Letter' | 'Legal' | 'Tabloid' | 'Ledger' | 'A3' | 'A5' | 'A6';
+      landscape?: boolean;
+      printBackground?: boolean;
+    }) => Promise<{ success: boolean; data?: Buffer; error?: string }>;
+    saveFile: (pdfBuffer: Buffer, defaultFileName?: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+    openFile: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+    readFile: (filePath: string) => Promise<{ success: boolean; data?: number[]; error?: string }>;
+  };
     };
   }
 }

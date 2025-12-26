@@ -14,6 +14,7 @@ import { Route as QuoteLifeRouteImport } from './routes/quote-life'
 import { Route as QuoteFormRouteImport } from './routes/quote-form'
 import { Route as QuoteDetailsRouteImport } from './routes/quote-details'
 import { Route as QuickQuoteRouteImport } from './routes/quick-quote'
+import { Route as PdfViewerRouteImport } from './routes/pdf-viewer'
 import { Route as PayorInformationRouteImport } from './routes/payor-information'
 import { Route as IllustrationSummaryRouteImport } from './routes/illustration-summary'
 import { Route as IllustrationHistoryRouteImport } from './routes/illustration-history'
@@ -48,6 +49,11 @@ const QuoteDetailsRoute = QuoteDetailsRouteImport.update({
 const QuickQuoteRoute = QuickQuoteRouteImport.update({
   id: '/quick-quote',
   path: '/quick-quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PdfViewerRoute = PdfViewerRouteImport.update({
+  id: '/pdf-viewer',
+  path: '/pdf-viewer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PayorInformationRoute = PayorInformationRouteImport.update({
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
   '/payor-information': typeof PayorInformationRoute
+  '/pdf-viewer': typeof PdfViewerRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
   '/payor-information': typeof PayorInformationRoute
+  '/pdf-viewer': typeof PdfViewerRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
   '/payor-information': typeof PayorInformationRoute
+  '/pdf-viewer': typeof PdfViewerRoute
   '/quick-quote': typeof QuickQuoteRoute
   '/quote-details': typeof QuoteDetailsRoute
   '/quote-form': typeof QuoteFormRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/illustration-history'
     | '/illustration-summary'
     | '/payor-information'
+    | '/pdf-viewer'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/illustration-history'
     | '/illustration-summary'
     | '/payor-information'
+    | '/pdf-viewer'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/illustration-history'
     | '/illustration-summary'
     | '/payor-information'
+    | '/pdf-viewer'
     | '/quick-quote'
     | '/quote-details'
     | '/quote-form'
@@ -218,6 +230,7 @@ export interface RootRouteChildren {
   IllustrationHistoryRoute: typeof IllustrationHistoryRoute
   IllustrationSummaryRoute: typeof IllustrationSummaryRoute
   PayorInformationRoute: typeof PayorInformationRoute
+  PdfViewerRoute: typeof PdfViewerRoute
   QuickQuoteRoute: typeof QuickQuoteRoute
   QuoteDetailsRoute: typeof QuoteDetailsRoute
   QuoteFormRoute: typeof QuoteFormRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/quick-quote'
       fullPath: '/quick-quote'
       preLoaderRoute: typeof QuickQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pdf-viewer': {
+      id: '/pdf-viewer'
+      path: '/pdf-viewer'
+      fullPath: '/pdf-viewer'
+      preLoaderRoute: typeof PdfViewerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payor-information': {
@@ -346,6 +366,7 @@ const rootRouteChildren: RootRouteChildren = {
   IllustrationHistoryRoute: IllustrationHistoryRoute,
   IllustrationSummaryRoute: IllustrationSummaryRoute,
   PayorInformationRoute: PayorInformationRoute,
+  PdfViewerRoute: PdfViewerRoute,
   QuickQuoteRoute: QuickQuoteRoute,
   QuoteDetailsRoute: QuoteDetailsRoute,
   QuoteFormRoute: QuoteFormRoute,

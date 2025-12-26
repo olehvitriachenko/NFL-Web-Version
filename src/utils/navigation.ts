@@ -108,8 +108,8 @@ export const navigateBack = (
   // Якщо router.history не працює, пробуємо window.history.back()
   if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
     try {
-      window.history.back();
-      return;
+    window.history.back();
+    return;
     } catch (error) {
       console.warn('Window history.back failed:', error);
     }
@@ -117,7 +117,7 @@ export const navigateBack = (
 
   // Скидаємо прапорець, якщо нічого не спрацювало
   isNavigatingBack = false;
-  
+
   // Якщо все не працює, використовуємо fallback
   fallbackNavigate();
 };

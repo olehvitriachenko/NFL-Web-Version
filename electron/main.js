@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { writeFile } from 'fs/promises';
+import { writeFile, readFile } from 'fs/promises';
 import { SQLiteDatabase } from './database.js';
 import { RatesDatabase } from './rates-database.js';
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +20,8 @@ function createWindow() {
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: false,
+            // Дозволяємо iframe завантажувати file:// URL для PDF
+            webSecurity: false, // Вимкнути для доступу до локальних файлів
         },
     });
     // Load the app
@@ -438,6 +440,19 @@ ipcMain.handle('pdf:openFile', async (_, filePath) => {
     }
     catch (error) {
         console.error('Error opening PDF file:', error);
+        return { success: false, error: String(error) };
+    }
+});
+// IPC handler for reading PDF file as ArrayBuffer
+ipcMain.handle('pdf:readFile', async (_, filePath) => {
+    try {
+        const fileBuffer = await readFile(filePath);
+        // Конвертуємо Buffer в ArrayBuffer для передачі через IPC
+        const arrayBuffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
+        return { success: true, data: Array.from(new Uint8Array(arrayBuffer)) };
+    }
+    catch (error) {
+        console.error('Error reading PDF file:', error);
         return { success: false, error: String(error) };
     }
 });

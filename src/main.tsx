@@ -46,7 +46,7 @@ const NotFoundComponent = () => {
   useEffect(() => {
     const currentPath = router.state.location.pathname;
     const normalized = normalizeRouterPath(currentPath);
-    
+
     // Якщо шлях неправильний, виправляємо його
     if (currentPath !== normalized) {
       router.navigate({ to: normalized });

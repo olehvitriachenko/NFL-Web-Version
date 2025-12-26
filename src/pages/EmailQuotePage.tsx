@@ -359,9 +359,9 @@ export const EmailQuotePage = () => {
         // Open PDF in system default application
         try {
           console.log('[EmailQuotePage] Opening PDF file:', filePath);
-          const opened = await openPDFFile(filePath);
+          const opened = await openPDFFile(filePath, true, router);
           if (opened) {
-            console.log('[EmailQuotePage] PDF opened successfully');
+            console.log('[EmailQuotePage] PDF opened successfully in app viewer');
           } else {
             console.warn('[EmailQuotePage] PDF file was not opened');
             alert('PDF generated successfully, but could not be opened automatically. File saved at: ' + filePath);
