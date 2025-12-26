@@ -5,9 +5,11 @@ import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
 import { BORDER, COLORS } from "../constants/theme";
+import { useQuickFormStore } from "../stores/QuickFormStore";
 
 export const ClientInformationPage = () => {
   const navigate = useNavigate();
+  const { updateConfigure } = useQuickFormStore();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -61,6 +63,15 @@ export const ClientInformationPage = () => {
       rateTable,
       rateFlatExtra,
     }));
+
+    // Update store with table and flatExtra values
+    const table = rateTable !== "None" ? parseInt(rateTable, 10) : undefined;
+    const flatExtra = rateFlatExtra && rateFlatExtra.trim() !== "" ? parseFloat(rateFlatExtra) : undefined;
+    
+    updateConfigure({
+      table: table && !isNaN(table) ? table : undefined,
+      flatExtra: flatExtra && !isNaN(flatExtra) && flatExtra > 0 ? flatExtra : undefined,
+    });
     
     // Trigger custom event to notify SetupClientPage
     window.dispatchEvent(new Event("insuredInfoUpdated"));

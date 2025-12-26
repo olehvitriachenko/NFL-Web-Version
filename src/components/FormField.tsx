@@ -5,6 +5,7 @@ interface FormFieldProps {
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   required?: boolean;
   error?: string;
 }
@@ -16,6 +17,7 @@ export const FormField = ({
   placeholder,
   value,
   onChange,
+  onBlur,
   required,
   error,
 }: FormFieldProps) => {
@@ -34,6 +36,7 @@ export const FormField = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         required={required}
         style={{ borderRadius: 10 }}
         className={`w-full px-4 py-3 text-base text-[#000000] bg-white border transition-all focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 ${

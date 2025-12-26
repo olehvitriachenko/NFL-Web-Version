@@ -85,8 +85,7 @@ export const SetupClientPage = () => {
   };
 
   const handleNext = () => {
-    // TODO: Navigate to next page
-    console.log("Next");
+    navigate({ to: "/configure-quote" });
   };
 
   const formatDate = (dateString: string) => {

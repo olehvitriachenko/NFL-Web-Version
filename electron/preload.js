@@ -38,5 +38,6 @@ contextBridge.exposeInMainWorld('electron', {
     pdf: {
         generateFromHTML: (htmlContent, options) => ipcRenderer.invoke('pdf:generateFromHTML', htmlContent, options),
         saveFile: (pdfBuffer, defaultFileName) => ipcRenderer.invoke('pdf:saveFile', pdfBuffer, defaultFileName),
+        openFile: (filePath) => ipcRenderer.invoke('pdf:openFile', filePath),
     },
 });

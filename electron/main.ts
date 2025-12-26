@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -451,6 +451,17 @@ ipcMain.handle('pdf:saveFile', async (_, pdfBuffer: Buffer, defaultFileName?: st
     return { success: true, filePath };
   } catch (error) {
     console.error('Error saving PDF file:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// IPC handler for opening PDF file
+ipcMain.handle('pdf:openFile', async (_, filePath: string) => {
+  try {
+    await shell.openPath(filePath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening PDF file:', error);
     return { success: false, error: String(error) };
   }
 });

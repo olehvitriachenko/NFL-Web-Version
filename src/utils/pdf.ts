@@ -102,6 +102,31 @@ export async function generateAndSavePDF(
 }
 
 /**
+ * Open PDF file in system default application
+ * @param filePath - Path to PDF file
+ * @returns Promise with success status
+ */
+export async function openPDFFile(filePath: string): Promise<boolean> {
+  if (!isElectron) {
+    console.warn('PDF opening is only available in Electron environment');
+    return false;
+  }
+
+  try {
+    const result = await window.electron!.pdf.openFile(filePath);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to open PDF');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error opening PDF file:', error);
+    throw error;
+  }
+}
+
+/**
  * Generate PDF from a React component or HTML element
  * @param element - HTML element or React ref
  * @param options - PDF generation options
