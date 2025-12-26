@@ -16,6 +16,7 @@ node_modules
 dist
 dist-ssr
 dist-electron
+dev-dist
 build
 out
 *.local
@@ -25,6 +26,16 @@ electron/main.js
 electron/preload.js
 *.asar
 *.asar.unpacked
+*.exe
+*.exe.blockmap
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+win-unpacked/
+mac-unpacked/
+linux-unpacked/
 
 # Database files
 *.db
@@ -41,6 +52,12 @@ electron/preload.js
 *.p12
 *.cer
 certificate.pfx
+
+# Electron builder outputs
+builder-debug.yml
+builder-effective-config.yaml
+latest.yml
+*.blockmap
 
 # Editor directories and files
 .vscode/*
@@ -84,3 +101,8 @@ coverage
 *.bak
 *.swp
 *~
+
+# Package manager lock files (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

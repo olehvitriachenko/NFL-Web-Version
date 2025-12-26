@@ -35,14 +35,21 @@ export const saveCurrentPath = (path: string) => {
 /**
  * Navigate back to previous page
  * Works in both web and Electron
+ * Uses browser history API (like browser back button)
  */
 export const navigateBack = (
   router: ReturnType<typeof useRouter>,
   fallbackNavigate: () => void
 ) => {
+  // Спочатку пробуємо використати window.history.back() - це працює як браузерна кнопка "назад"
+  // і використовує реальну історію навігації
+  if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+
+  // Якщо історії немає, пробуємо використати збережений попередній шлях
   const currentRouterPath = normalizePath(router.state.location.pathname);
-  
-  // Спочатку пробуємо використати збережений попередній шлях
   if (previousPath && previousPath !== currentRouterPath) {
     try {
       router.navigate({ to: previousPath });
@@ -50,13 +57,6 @@ export const navigateBack = (
     } catch (error) {
       console.warn('Navigation to previous path failed:', error);
     }
-  }
-
-  // Якщо немає попереднього шляху, просто використовуємо window.history.back()
-  // Це працює в Electron
-  if (typeof window !== 'undefined' && window.history) {
-    window.history.back();
-    return;
   }
 
   // Якщо все не працює, використовуємо fallback
