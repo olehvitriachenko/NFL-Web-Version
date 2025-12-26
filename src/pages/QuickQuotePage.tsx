@@ -1,11 +1,15 @@
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
 import { OfflineIndicator } from '../components/OfflineIndicator';
+import { navigateBack } from '../utils/navigation';
 import { BORDER } from '../constants/theme';
 import { useQuickFormStore } from '../stores/QuickFormStore';
+import nflLogo from "/nfl_brand_logo.png";
+import amlLogo from "/aml_brand_logo.jpg";
 
 export const QuickQuotePage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { updateForm } = useQuickFormStore();
 
   const handleBack = () => {

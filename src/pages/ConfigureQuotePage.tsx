@@ -206,6 +206,7 @@ const isAgeValidForProduct = (productName: string, age: number): boolean => {
 
 export const ConfigureQuotePage = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { updateConfigure, product: storeProduct, paymentMethod: storePaymentMethod, 
     paymentMode: storePaymentMode, faceAmount: storeFaceAmount, 
     waiverOfPremiumEnabled: storeWaiverOfPremium, accidentalDeathEnabled: storeAccidentalDeath,
