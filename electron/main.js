@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { writeFile, readFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { SQLiteDatabase } from './database.js';
 import { RatesDatabase } from './rates-database.js';
 const __filename = fileURLToPath(import.meta.url);
@@ -432,6 +433,23 @@ ipcMain.handle('pdf:saveFile', async (_, pdfBuffer, defaultFileName) => {
         return { success: false, error: String(error) };
     }
 });
+// IPC handler for saving PDF file to a specific path without dialog
+ipcMain.handle('pdf:saveFileToPath', async (_, pdfBuffer, filePath) => {
+    try {
+        // Ensure directory exists
+        const dir = path.dirname(filePath);
+        const fs = await import('fs');
+        if (!fs.existsSync(dir)) {
+            await fs.promises.mkdir(dir, { recursive: true });
+        }
+        await writeFile(filePath, pdfBuffer);
+        return { success: true, filePath };
+    }
+    catch (error) {
+        console.error('Error saving PDF file to path:', error);
+        return { success: false, error: String(error) };
+    }
+});
 // IPC handler for opening PDF file
 ipcMain.handle('pdf:openFile', async (_, filePath) => {
     try {
@@ -456,3 +474,29 @@ ipcMain.handle('pdf:readFile', async (_, filePath) => {
         return { success: false, error: String(error) };
     }
 });
+// IPC handler for checking if file exists
+ipcMain.handle('pdf:fileExists', async (_, filePath) => {
+    try {
+        const exists = existsSync(filePath);
+        return { success: true, data: exists };
+    }
+    catch (error) {
+        console.error('Error checking file existence:', error);
+        return { success: false, error: String(error), data: false };
+    }
+});
+// IPC handler for getting userData directory path
+console.log('[Main] Registering app:getUserDataPath handler at module load time');
+ipcMain.handle('app:getUserDataPath', async () => {
+    console.log('[Main] app:getUserDataPath handler called');
+    try {
+        const userDataPath = app.getPath('userData');
+        console.log('[Main] UserData path:', userDataPath);
+        return { success: true, data: userDataPath };
+    }
+    catch (error) {
+        console.error('[Main] Error getting userData path:', error);
+        return { success: false, error: String(error) };
+    }
+});
+console.log('[Main] app:getUserDataPath handler registered successfully');

@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
 import { OfflineIndicator } from '../components/OfflineIndicator';
 import { navigateBack } from '../utils/navigation';
+import { openPDFFile, generatePDFFromHTML, savePDFFileToPath } from '../utils/pdf';
+import { pdfService, type QuoteDataForPDF } from '../services/pdf/pdfService';
 import { FiSearch } from 'react-icons/fi';
 
 interface Illustration {
@@ -13,6 +15,18 @@ interface Illustration {
   date: string;
   deathBenefit: number;
   monthlyPayment: number;
+  pdfPath?: string | null;
+  // Additional fields for PDF generation
+  product?: string;
+  company?: string;
+  faceAmount?: number;
+  paymentMode?: string;
+  insured?: {
+    age?: number;
+    sex?: string;
+    smokingHabit?: string;
+  };
+  agentId?: number;
 }
 
 // Mock data
@@ -73,10 +87,94 @@ const mockIllustrations: Illustration[] = [
   },
 ];
 
+// Storage key for PDF paths
+const PDF_PATHS_STORAGE_KEY = 'illustration_pdf_paths';
+
+// Helper functions for storing PDF paths
+const getStoredPdfPaths = (): Record<string, string> => {
+  try {
+    const stored = localStorage.getItem(PDF_PATHS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.error('Error reading PDF paths from storage:', error);
+    return {};
+  }
+};
+
+const savePdfPath = (illustrationId: string, pdfPath: string) => {
+  try {
+    const paths = getStoredPdfPaths();
+    paths[illustrationId] = pdfPath;
+    localStorage.setItem(PDF_PATHS_STORAGE_KEY, JSON.stringify(paths));
+  } catch (error) {
+    console.error('Error saving PDF path to storage:', error);
+  }
+};
+
+const getPdfPath = (illustrationId: string): string | null => {
+  const paths = getStoredPdfPaths();
+  return paths[illustrationId] || null;
+};
+
+// Helper function to check if file exists
+const checkFileExists = async (filePath: string): Promise<boolean> => {
+  if (!window.electron?.pdf) {
+    return false;
+  }
+  try {
+    const result = await window.electron.pdf.fileExists(filePath);
+    return result.success && result.data === true;
+  } catch (error) {
+    console.error('Error checking file existence:', error);
+    return false;
+  }
+};
+
 export const IllustrationHistoryPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
+  const [illustrations, setIllustrations] = useState<Illustration[]>(mockIllustrations);
+
+  // Load PDF paths from storage on mount
+  useEffect(() => {
+    const loadPdfPaths = async () => {
+      console.log('[IllustrationHistoryPage] Loading PDF paths from storage...');
+      const storedPaths = getStoredPdfPaths();
+      console.log('[IllustrationHistoryPage] Stored PDF paths:', storedPaths);
+      
+      const updatedIllustrations = await Promise.all(
+        mockIllustrations.map(async (illustration) => {
+          const storedPath = getPdfPath(illustration.id);
+          console.log(`[IllustrationHistoryPage] Checking illustration ${illustration.id}, stored path:`, storedPath);
+          
+          if (storedPath) {
+            // Verify file still exists
+            console.log(`[IllustrationHistoryPage] Verifying file exists: ${storedPath}`);
+            const exists = await checkFileExists(storedPath);
+            console.log(`[IllustrationHistoryPage] File exists check result: ${exists}`);
+            
+            if (exists) {
+              console.log(`[IllustrationHistoryPage] File exists, using stored path for illustration ${illustration.id}`);
+              return { ...illustration, pdfPath: storedPath };
+            } else {
+              console.log(`[IllustrationHistoryPage] File does not exist, removing from storage for illustration ${illustration.id}`);
+              // Remove invalid path from storage
+              const paths = getStoredPdfPaths();
+              delete paths[illustration.id];
+              localStorage.setItem(PDF_PATHS_STORAGE_KEY, JSON.stringify(paths));
+            }
+          }
+          return illustration;
+        })
+      );
+      console.log('[IllustrationHistoryPage] Updated illustrations:', updatedIllustrations);
+      setIllustrations(updatedIllustrations);
+    };
+
+    loadPdfPaths();
+  }, []);
 
   const handleBack = () => {
     navigateBack(router, () => navigate({ to: '/home' }));
@@ -86,18 +184,283 @@ export const IllustrationHistoryPage = () => {
     navigate({ to: '/home' });
   };
 
+  const handleIllustrationClick = async (illustration: Illustration) => {
+    // Check if we're in Electron environment
+    const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
+    if (!isElectron) {
+      alert('PDF generation is only available in Electron environment. Please run the application in Electron.');
+      return;
+    }
+
+    // Check if PDF path is stored and file exists
+    let pdfPath = illustration.pdfPath || getPdfPath(illustration.id);
+    
+    if (pdfPath) {
+      console.log('[IllustrationHistoryPage] Found stored PDF path:', pdfPath);
+      // Verify file still exists
+      const exists = await checkFileExists(pdfPath);
+      console.log('[IllustrationHistoryPage] File exists check result:', exists);
+      if (exists) {
+        try {
+          console.log('[IllustrationHistoryPage] Opening existing PDF:', pdfPath);
+          const opened = await openPDFFile(pdfPath, true, router);
+          if (!opened) {
+            alert('Could not open PDF file.');
+          }
+        } catch (error) {
+          console.error('Error opening PDF:', error);
+          alert('Error opening PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        }
+        return;
+      } else {
+        console.log('[IllustrationHistoryPage] Stored PDF file does not exist, removing from storage');
+        // File doesn't exist, remove from storage
+        const paths = getStoredPdfPaths();
+        delete paths[illustration.id];
+        localStorage.setItem(PDF_PATHS_STORAGE_KEY, JSON.stringify(paths));
+        pdfPath = null;
+      }
+    } else {
+      console.log('[IllustrationHistoryPage] No stored PDF path found for illustration:', illustration.id);
+    }
+
+    // Otherwise, generate new PDF
+    setIsGeneratingPDF(illustration.id);
+    try {
+      // Parse name to get first and last name
+      const nameParts = illustration.name.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Parse policy code to extract product info
+      // Format: "PWL - 30 - M - N" or similar
+      const policyParts = illustration.policyCode.split(' - ');
+      const product = policyParts[0] || illustration.product || 'PWL';
+      
+      // Determine company logo path (default to NFL)
+      const companyLogoUri = illustration.company === 'CompanyB' 
+        ? '/aml_brand_logo.jpg' 
+        : '/nfl_brand_logo.png';
+
+      // Parse date string (e.g., "December 25, 2025")
+      let createdAt = Math.floor(Date.now() / 1000);
+      try {
+        const dateObj = new Date(illustration.date);
+        if (!isNaN(dateObj.getTime())) {
+          createdAt = Math.floor(dateObj.getTime() / 1000);
+        }
+      } catch (error) {
+        console.warn('Could not parse date:', illustration.date);
+      }
+
+      // Prepare quote data for PDF
+      const quoteData: QuoteDataForPDF = {
+        id: illustration.id,
+        company: illustration.company || 'CompanyA',
+        product: product,
+        configureProduct: product,
+        faceAmount: illustration.faceAmount || illustration.deathBenefit,
+        premium: illustration.monthlyPayment * 12, // Convert monthly to annual
+        paymentMode: illustration.paymentMode || 'Monthly',
+        paymentMethod: 'Regular',
+        created_at: createdAt,
+        insured: {
+          age: illustration.insured?.age || 30,
+          sex: illustration.insured?.sex || 'Male',
+          smokingHabit: illustration.insured?.smokingHabit || 'Non-smoker',
+        },
+      };
+
+      // Get agent data if agentId is available
+      let agentData;
+      if (illustration.agentId && window.electron?.db) {
+        try {
+          const agentResult = await window.electron.db.getAgentById(illustration.agentId);
+          if (agentResult.success && agentResult.data) {
+            agentData = {
+              firstName: agentResult.data.firstName || '',
+              lastName: agentResult.data.lastName || '',
+              id: agentResult.data.id?.toString() || '',
+              email: agentResult.data.email || '',
+              phone: agentResult.data.phone || '',
+              street: agentResult.data.street || '',
+              city: agentResult.data.city || '',
+              state: agentResult.data.state || '',
+              zipCode: agentResult.data.zipCode || '',
+            };
+          }
+        } catch (error) {
+          console.warn('Could not load agent data:', error);
+        }
+      }
+
+      console.log('[IllustrationHistoryPage] Generating PDF for illustration:', illustration.id);
+      console.log('[IllustrationHistoryPage] Quote data:', quoteData);
+      
+      // Get userData directory for saving PDFs
+      let pdfDirectory: string;
+      console.log('[IllustrationHistoryPage] Checking Electron API availability...');
+      console.log('[IllustrationHistoryPage] window.electron:', window.electron);
+      console.log('[IllustrationHistoryPage] window.electron?.app:', window.electron?.app);
+      
+      if (!window.electron) {
+        console.error('[IllustrationHistoryPage] window.electron is not available');
+        alert('Electron API not available. Please restart the application.');
+        return;
+      }
+      
+      if (!window.electron.app) {
+        console.error('[IllustrationHistoryPage] window.electron.app is not available');
+        alert('Electron app API not available. Please restart the application.');
+        return;
+      }
+      
+      try {
+        console.log('[IllustrationHistoryPage] Calling getUserDataPath...');
+        const userDataResult = await window.electron.app.getUserDataPath();
+        console.log('[IllustrationHistoryPage] getUserDataPath result:', userDataResult);
+        
+        if (userDataResult.success && userDataResult.data) {
+          pdfDirectory = userDataResult.data;
+          console.log('[IllustrationHistoryPage] UserData path:', pdfDirectory);
+        } else {
+          console.error('[IllustrationHistoryPage] getUserDataPath failed:', userDataResult.error);
+          throw new Error(userDataResult.error || 'Could not get userData path');
+        }
+      } catch (error) {
+        console.error('[IllustrationHistoryPage] Error getting userData path:', error);
+        console.error('[IllustrationHistoryPage] Error details:', error instanceof Error ? error.message : String(error));
+        console.error('[IllustrationHistoryPage] Full error object:', error);
+        
+        // Show detailed error message
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        alert(`Error getting save directory: ${errorMessage}\n\nPlease restart the Electron application to apply the latest changes.`);
+        return;
+      }
+
+      // Create PDFs directory path
+      const pdfsDir = `${pdfDirectory}/pdfs`;
+      
+      // Generate deterministic filename based on illustration ID
+      const deterministicFileName = `illustration_${illustration.id}.pdf`;
+      const deterministicFilePath = `${pdfsDir}/${deterministicFileName}`;
+      
+      console.log('[IllustrationHistoryPage] Deterministic PDF path:', deterministicFilePath);
+      
+      // Check if file already exists with deterministic name
+      const fileExists = await checkFileExists(deterministicFilePath);
+      console.log('[IllustrationHistoryPage] File exists check for deterministic path:', fileExists);
+      if (fileExists) {
+        console.log('[IllustrationHistoryPage] PDF file already exists with deterministic name:', deterministicFilePath);
+        // Save path to storage
+        savePdfPath(illustration.id, deterministicFilePath);
+        // Update state
+        setIllustrations(prev => 
+          prev.map(ill => 
+            ill.id === illustration.id 
+              ? { ...ill, pdfPath: deterministicFilePath }
+              : ill
+          )
+        );
+        // Open existing PDF
+        try {
+          const opened = await openPDFFile(deterministicFilePath, true, router);
+          if (!opened) {
+            alert('Could not open PDF file.');
+          }
+        } catch (error) {
+          console.error('Error opening PDF:', error);
+          alert('Error opening PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        }
+        return;
+      }
+
+      // Generate HTML for PDF
+      const html = await pdfService.generateHTMLTemplate({
+        quote: quoteData,
+        agent: agentData,
+        recipientEmail: illustration.email,
+        insuredFirstName: firstName,
+        insuredLastName: lastName,
+        companyLogoUri: companyLogoUri,
+      });
+
+      if (!html || html.trim().length === 0) {
+        throw new Error('Generated HTML template is empty');
+      }
+
+      // Generate PDF buffer
+      const pdfBuffer = await generatePDFFromHTML(html, {
+        pageSize: 'Letter',
+        printBackground: true,
+      });
+
+      if (!pdfBuffer) {
+        alert('PDF generation failed.');
+        return;
+      }
+
+      // Save PDF to deterministic path
+      const filePath = await savePDFFileToPath(pdfBuffer, deterministicFilePath);
+
+      if (!filePath) {
+        console.log('[IllustrationHistoryPage] PDF save failed');
+        alert('PDF save failed.');
+        return;
+      }
+
+      console.log('[IllustrationHistoryPage] PDF generated successfully:', filePath);
+      console.log('[IllustrationHistoryPage] Saving PDF path to storage for illustration:', illustration.id);
+      
+      // Save PDF path to storage
+      savePdfPath(illustration.id, filePath);
+      console.log('[IllustrationHistoryPage] PDF path saved to storage');
+      
+      // Verify it was saved
+      const verifyPath = getPdfPath(illustration.id);
+      console.log('[IllustrationHistoryPage] Verified saved path:', verifyPath);
+      
+      // Update illustration in state
+      setIllustrations(prev => {
+        const updated = prev.map(ill => 
+          ill.id === illustration.id 
+            ? { ...ill, pdfPath: filePath }
+            : ill
+        );
+        console.log('[IllustrationHistoryPage] Updated illustrations state:', updated);
+        return updated;
+      });
+      
+      // Open PDF in app viewer
+      try {
+        const opened = await openPDFFile(filePath, true, router);
+        if (!opened) {
+          alert('PDF generated successfully, but could not be opened automatically. File saved at: ' + filePath);
+        }
+      } catch (error) {
+        console.error('Error opening PDF:', error);
+        alert('PDF generated successfully, but could not be opened. File saved at: ' + filePath);
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsGeneratingPDF(null);
+    }
+  };
+
   const filteredIllustrations = useMemo(() => {
     if (!searchQuery.trim()) {
-      return mockIllustrations;
+      return illustrations;
     }
 
     const query = searchQuery.toLowerCase();
-    return mockIllustrations.filter(
+    return illustrations.filter(
       (illustration) =>
         illustration.name.toLowerCase().includes(query) ||
         illustration.email.toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, illustrations]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -139,7 +502,8 @@ export const IllustrationHistoryPage = () => {
               filteredIllustrations.map((illustration) => (
                 <div
                   key={illustration.id}
-                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+                  onClick={() => handleIllustrationClick(illustration)}
+                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-[#0D175C]/30 transition-all"
                   style={{ borderRadius: 10 }}
                 >
                   <div className="flex justify-between items-start mb-3">
@@ -178,6 +542,17 @@ export const IllustrationHistoryPage = () => {
                         {formatCurrency(illustration.monthlyPayment)}
                       </span>
                     </div>
+                    {isGeneratingPDF === illustration.id && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0D175C]"></div>
+                        <span className="text-xs text-gray-600">Generating PDF...</span>
+                      </div>
+                    )}
+                    {illustration.pdfPath && isGeneratingPDF !== illustration.id && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-green-600">✓ PDF available</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

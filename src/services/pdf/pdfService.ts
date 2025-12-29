@@ -156,7 +156,7 @@ class PdfService {
   /**
    * Generates HTML template for PDF
    */
-  private async generateHTMLTemplate(options: PdfGenerationOptions): Promise<string> {
+  async generateHTMLTemplate(options: PdfGenerationOptions): Promise<string> {
     const { quote, agent, insuredFirstName, insuredLastName, illustrationData, companyLogoUri } = options;
     
     // Get quote number
