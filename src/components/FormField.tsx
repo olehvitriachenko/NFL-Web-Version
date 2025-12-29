@@ -5,6 +5,7 @@ interface FormFieldProps {
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   required?: boolean;
   error?: string;
 }
@@ -16,16 +17,17 @@ export const FormField = ({
   placeholder,
   value,
   onChange,
+  onBlur,
   required,
   error,
 }: FormFieldProps) => {
   return (
-    <div className="mb-6">
+    <div>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-[#6e6e73] mb-2"
+        className="block text-sm font-medium text-gray-600 mb-2"
       >
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-[#D32F2F]">*</span>}
       </label>
       <input
         id={name}
@@ -34,15 +36,17 @@ export const FormField = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         required={required}
-        className={`w-full px-4 py-3 text-base text-[#1d1d1f] bg-white border rounded-lg transition-all focus:outline-none focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 ${
+        style={{ borderRadius: 10 }}
+        className={`w-full px-4 py-3 text-base text-[#000000] bg-white border transition-all focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 ${
           error
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-            : 'border-[#d2d2d7]'
-        } placeholder:text-[#6e6e73]`}
+            ? 'border-[#D32F2F] focus:border-[#D32F2F] focus:ring-[#D32F2F]/10'
+            : 'border-gray-300'
+        } placeholder:text-gray-500`}
       />
       {error && (
-        <span className="block text-xs text-red-500 mt-1">{error}</span>
+        <span className="block text-xs text-[#D32F2F] mt-1">{error}</span>
       )}
     </div>
   );
