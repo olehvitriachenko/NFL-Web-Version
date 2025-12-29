@@ -81,6 +81,35 @@ export async function savePDFFile(
 }
 
 /**
+ * Save PDF buffer to a specific path without dialog
+ * @param pdfBuffer - PDF buffer to save
+ * @param filePath - Full path where to save the file
+ * @returns Promise with file path or null if failed
+ */
+export async function savePDFFileToPath(
+  pdfBuffer: Buffer,
+  filePath: string
+): Promise<string | null> {
+  if (!isElectron) {
+    console.warn('PDF saving is only available in Electron environment');
+    return null;
+  }
+
+  try {
+    const result = await window.electron!.pdf.saveFileToPath(pdfBuffer, filePath);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save PDF');
+    }
+
+    return result.filePath || null;
+  } catch (error) {
+    console.error('Error saving PDF file to path:', error);
+    throw error;
+  }
+}
+
+/**
  * Generate and save PDF from HTML in one step
  * @param htmlContent - HTML string to convert to PDF
  * @param defaultFileName - Default file name for save dialog

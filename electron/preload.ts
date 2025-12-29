@@ -63,8 +63,13 @@ contextBridge.exposeInMainWorld('electron', {
       printBackground?: boolean;
     }) => ipcRenderer.invoke('pdf:generateFromHTML', htmlContent, options),
     saveFile: (pdfBuffer: Buffer, defaultFileName?: string) => ipcRenderer.invoke('pdf:saveFile', pdfBuffer, defaultFileName),
+    saveFileToPath: (pdfBuffer: Buffer, filePath: string) => ipcRenderer.invoke('pdf:saveFileToPath', pdfBuffer, filePath),
     openFile: (filePath: string) => ipcRenderer.invoke('pdf:openFile', filePath),
     readFile: (filePath: string) => ipcRenderer.invoke('pdf:readFile', filePath),
+    fileExists: (filePath: string) => ipcRenderer.invoke('pdf:fileExists', filePath),
+  },
+  app: {
+    getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
   },
 });
 
@@ -132,8 +137,13 @@ declare global {
       printBackground?: boolean;
     }) => Promise<{ success: boolean; data?: Buffer; error?: string }>;
     saveFile: (pdfBuffer: Buffer, defaultFileName?: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+    saveFileToPath: (pdfBuffer: Buffer, filePath: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
     openFile: (filePath: string) => Promise<{ success: boolean; error?: string }>;
     readFile: (filePath: string) => Promise<{ success: boolean; data?: number[]; error?: string }>;
+    fileExists: (filePath: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
+  };
+  app: {
+    getUserDataPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
   };
     };
   }
