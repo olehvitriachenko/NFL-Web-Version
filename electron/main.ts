@@ -127,6 +127,40 @@ ipcMain.handle('db:updateAgent', async (_, id, agent) => {
   }
 });
 
+// IPC handlers for illustrations
+ipcMain.handle('db:saveIllustration', async (_, illustration) => {
+  try {
+    database.createIllustration(illustration);
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving illustration:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('db:getAllIllustrations', async () => {
+  try {
+    const illustrations = database.getAllIllustrations();
+    return { success: true, data: illustrations };
+  } catch (error) {
+    console.error('Error getting illustrations:', error);
+    return { success: false, error: String(error), data: [] };
+  }
+});
+
+ipcMain.handle('db:updateIllustrationPdfPath', async (_, id, pdfPath) => {
+  try {
+    const updated = database.updateIllustrationPdfPath(id, pdfPath);
+    if (!updated) {
+      return { success: false, error: 'Illustration not found' };
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating illustration PDF path:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
 // IPC handlers for rates database operations
 ipcMain.handle('rates:getRate', async (_, params) => {
   try {

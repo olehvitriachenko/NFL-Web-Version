@@ -65,6 +65,27 @@ export class SQLiteDatabase {
         phone TEXT,
         email TEXT NOT NULL,
         createdAt TEXT NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS illustrations (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        policyCode TEXT,
+        date TEXT NOT NULL,
+        deathBenefit REAL NOT NULL,
+        monthlyPayment REAL NOT NULL,
+        pdfPath TEXT,
+        product TEXT,
+        company TEXT,
+        faceAmount REAL,
+        paymentMode TEXT,
+        insuredAge INTEGER,
+        insuredSex TEXT,
+        insuredSmokingHabit TEXT,
+        agentId INTEGER,
+        quoteId TEXT,
+        createdAt TEXT NOT NULL
       )
     `);
   }
@@ -196,6 +217,101 @@ export class SQLiteDatabase {
    */
   isConnected(): boolean {
     return this.db !== null;
+  }
+
+  /**
+   * Создание илюстрации
+   */
+  createIllustration(illustration: {
+    id: string;
+    name: string;
+    email: string;
+    policyCode?: string;
+    date: string;
+    deathBenefit: number;
+    monthlyPayment: number;
+    pdfPath?: string | null;
+    product?: string;
+    company?: string;
+    faceAmount?: number;
+    paymentMode?: string;
+    insuredAge?: number;
+    insuredSex?: string;
+    insuredSmokingHabit?: string;
+    agentId?: number;
+    quoteId?: string;
+  }): void {
+    const db = this.getDb();
+    const stmt = db.prepare(`
+      INSERT INTO illustrations (
+        id, name, email, policyCode, date, deathBenefit, monthlyPayment,
+        pdfPath, product, company, faceAmount, paymentMode,
+        insuredAge, insuredSex, insuredSmokingHabit, agentId, quoteId, createdAt
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      illustration.id,
+      illustration.name,
+      illustration.email,
+      illustration.policyCode || null,
+      illustration.date,
+      illustration.deathBenefit,
+      illustration.monthlyPayment,
+      illustration.pdfPath || null,
+      illustration.product || null,
+      illustration.company || null,
+      illustration.faceAmount || null,
+      illustration.paymentMode || null,
+      illustration.insuredAge || null,
+      illustration.insuredSex || null,
+      illustration.insuredSmokingHabit || null,
+      illustration.agentId || null,
+      illustration.quoteId || null,
+      new Date().toISOString()
+    );
+  }
+
+  /**
+   * Получение всех илюстраций
+   */
+  getAllIllustrations(): any[] {
+    const db = this.getDb();
+    const stmt = db.prepare('SELECT * FROM illustrations ORDER BY createdAt DESC');
+    const results = stmt.all() as any[];
+    
+    // Transform database results to match Illustration interface
+    return results.map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      policyCode: row.policyCode,
+      date: row.date,
+      deathBenefit: row.deathBenefit,
+      monthlyPayment: row.monthlyPayment,
+      pdfPath: row.pdfPath,
+      product: row.product,
+      company: row.company,
+      faceAmount: row.faceAmount,
+      paymentMode: row.paymentMode,
+      insured: {
+        age: row.insuredAge,
+        sex: row.insuredSex,
+        smokingHabit: row.insuredSmokingHabit,
+      },
+      agentId: row.agentId,
+    }));
+  }
+
+  /**
+   * Обновление пути PDF для илюстрации
+   */
+  updateIllustrationPdfPath(id: string, pdfPath: string): boolean {
+    const db = this.getDb();
+    const stmt = db.prepare('UPDATE illustrations SET pdfPath = ? WHERE id = ?');
+    const result = stmt.run(pdfPath, id);
+    return result.changes > 0;
   }
 }
 

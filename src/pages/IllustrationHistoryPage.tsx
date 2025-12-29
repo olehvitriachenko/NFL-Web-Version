@@ -6,6 +6,7 @@ import { navigateBack } from '../utils/navigation';
 import { openPDFFile, generatePDFFromHTML, savePDFFileToPath } from '../utils/pdf';
 import { pdfService, type QuoteDataForPDF, type AgentInfo } from '../services/pdf/pdfService';
 import { FiSearch } from 'react-icons/fi';
+import { db } from '../utils/database';
 
 interface Illustration {
   id: string;
@@ -135,31 +136,90 @@ export const IllustrationHistoryPage = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
-  const [illustrations, setIllustrations] = useState<Illustration[]>(mockIllustrations);
+  const [illustrations, setIllustrations] = useState<Illustration[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load PDF paths from storage on mount
+  // Load illustrations from database on mount
   useEffect(() => {
+    const loadIllustrations = async () => {
+      setIsLoading(true);
+      try {
+        await db.init();
+        const dbIllustrations = await db.getAllIllustrations();
+        console.log('[IllustrationHistoryPage] Loaded illustrations from database:', dbIllustrations);
+        
+        // Transform database illustrations to match Illustration interface
+        const transformedIllustrations: Illustration[] = dbIllustrations.map((ill: any) => ({
+          id: ill.id,
+          name: ill.name,
+          email: ill.email,
+          policyCode: ill.policyCode || '',
+          date: ill.date,
+          deathBenefit: ill.deathBenefit,
+          monthlyPayment: ill.monthlyPayment,
+          pdfPath: ill.pdfPath,
+          product: ill.product,
+          company: ill.company,
+          faceAmount: ill.faceAmount,
+          paymentMode: ill.paymentMode,
+          insured: ill.insured,
+          agentId: ill.agentId,
+        }));
+        
+        setIllustrations(transformedIllustrations);
+      } catch (error) {
+        console.error('[IllustrationHistoryPage] Error loading illustrations:', error);
+        // Fallback to empty array on error
+        setIllustrations([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadIllustrations();
+  }, []);
+
+  // Load PDF paths from storage and verify files exist (for backward compatibility)
+  useEffect(() => {
+    if (illustrations.length === 0) return;
+    
     const loadPdfPaths = async () => {
       console.log('[IllustrationHistoryPage] Loading PDF paths from storage...');
       const storedPaths = getStoredPdfPaths();
       console.log('[IllustrationHistoryPage] Stored PDF paths:', storedPaths);
       
       const updatedIllustrations = await Promise.all(
-        mockIllustrations.map(async (illustration) => {
-          const storedPath = getPdfPath(illustration.id);
-          console.log(`[IllustrationHistoryPage] Checking illustration ${illustration.id}, stored path:`, storedPath);
+        illustrations.map(async (illustration) => {
+          // Use pdfPath from database if available, otherwise check localStorage
+          if (illustration.pdfPath) {
+            // Verify file still exists
+            const exists = await checkFileExists(illustration.pdfPath);
+            if (exists) {
+              return illustration;
+            } else {
+              // File doesn't exist, remove from database
+              try {
+                await db.updateIllustrationPdfPath(illustration.id, '');
+              } catch (error) {
+                console.error('Error updating illustration PDF path:', error);
+              }
+              return { ...illustration, pdfPath: undefined };
+            }
+          }
           
+          const storedPath = getPdfPath(illustration.id);
           if (storedPath) {
             // Verify file still exists
-            console.log(`[IllustrationHistoryPage] Verifying file exists: ${storedPath}`);
             const exists = await checkFileExists(storedPath);
-            console.log(`[IllustrationHistoryPage] File exists check result: ${exists}`);
-            
             if (exists) {
-              console.log(`[IllustrationHistoryPage] File exists, using stored path for illustration ${illustration.id}`);
+              // Update database with the path
+              try {
+                await db.updateIllustrationPdfPath(illustration.id, storedPath);
+              } catch (error) {
+                console.error('Error updating illustration PDF path:', error);
+              }
               return { ...illustration, pdfPath: storedPath };
             } else {
-              console.log(`[IllustrationHistoryPage] File does not exist, removing from storage for illustration ${illustration.id}`);
               // Remove invalid path from storage
               const paths = getStoredPdfPaths();
               delete paths[illustration.id];
@@ -169,12 +229,13 @@ export const IllustrationHistoryPage = () => {
           return illustration;
         })
       );
-      console.log('[IllustrationHistoryPage] Updated illustrations:', updatedIllustrations);
+      
+      console.log('[IllustrationHistoryPage] Updated illustrations with PDF paths:', updatedIllustrations);
       setIllustrations(updatedIllustrations);
     };
 
     loadPdfPaths();
-  }, []);
+  }, [illustrations.length]); // Only run when illustrations are loaded
 
   const handleBack = () => {
     navigateBack(router, () => navigate({ to: '/home' }));
@@ -415,13 +476,15 @@ export const IllustrationHistoryPage = () => {
       console.log('[IllustrationHistoryPage] PDF generated successfully:', filePath);
       console.log('[IllustrationHistoryPage] Saving PDF path to storage for illustration:', illustration.id);
       
-      // Save PDF path to storage
-      savePdfPath(illustration.id, filePath);
-      console.log('[IllustrationHistoryPage] PDF path saved to storage');
-      
-      // Verify it was saved
-      const verifyPath = getPdfPath(illustration.id);
-      console.log('[IllustrationHistoryPage] Verified saved path:', verifyPath);
+      // Save PDF path to database
+      try {
+        await db.updateIllustrationPdfPath(illustration.id, filePath);
+        console.log('[IllustrationHistoryPage] PDF path saved to database');
+      } catch (error) {
+        console.error('[IllustrationHistoryPage] Error saving PDF path to database:', error);
+        // Fallback to localStorage
+        savePdfPath(illustration.id, filePath);
+      }
       
       // Update illustration in state
       setIllustrations(prev => {
@@ -497,7 +560,11 @@ export const IllustrationHistoryPage = () => {
 
           {/* Illustration List */}
           <div className="space-y-3">
-            {filteredIllustrations.length === 0 ? (
+            {isLoading ? (
+              <div className="bg-white p-8 rounded-lg shadow-sm text-center">
+                <p className="text-gray-500">Loading illustrations...</p>
+              </div>
+            ) : filteredIllustrations.length === 0 ? (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center">
                 <p className="text-gray-500">No illustrations found</p>
               </div>

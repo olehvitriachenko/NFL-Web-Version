@@ -5,6 +5,9 @@ export interface ElectronAPI {
     getAgentById: (id: number) => Promise<{ success: boolean; data?: any; error?: string }>;
     deleteAgent: (id: number) => Promise<{ success: boolean; error?: string }>;
     updateAgent: (id: number, agent: any) => Promise<{ success: boolean; error?: string }>;
+    saveIllustration: (illustration: any) => Promise<{ success: boolean; error?: string }>;
+    getAllIllustrations: () => Promise<{ success: boolean; data: any[]; error?: string }>;
+    updateIllustrationPdfPath: (id: string, pdfPath: string) => Promise<{ success: boolean; error?: string }>;
   };
   rates: {
     getRate: (params: any) => Promise<{ success: boolean; data?: any; error?: string }>;

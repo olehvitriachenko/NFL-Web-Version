@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('electron', {
     getAgentById: (id: number) => ipcRenderer.invoke('db:getAgentById', id),
     deleteAgent: (id: number) => ipcRenderer.invoke('db:deleteAgent', id),
     updateAgent: (id: number, agent: any) => ipcRenderer.invoke('db:updateAgent', id, agent),
+    saveIllustration: (illustration: any) => ipcRenderer.invoke('db:saveIllustration', illustration),
+    getAllIllustrations: () => ipcRenderer.invoke('db:getAllIllustrations'),
+    updateIllustrationPdfPath: (id: string, pdfPath: string) => ipcRenderer.invoke('db:updateIllustrationPdfPath', id, pdfPath),
   },
   rates: {
     getRate: (params: any) => ipcRenderer.invoke('rates:getRate', params),
@@ -83,6 +86,9 @@ declare global {
         getAgentById: (id: number) => Promise<{ success: boolean; data?: any; error?: string }>;
         deleteAgent: (id: number) => Promise<{ success: boolean; error?: string }>;
         updateAgent: (id: number, agent: any) => Promise<{ success: boolean; error?: string }>;
+        saveIllustration: (illustration: any) => Promise<{ success: boolean; error?: string }>;
+        getAllIllustrations: () => Promise<{ success: boolean; data: any[]; error?: string }>;
+        updateIllustrationPdfPath: (id: string, pdfPath: string) => Promise<{ success: boolean; error?: string }>;
       };
       rates: {
         getRate: (params: any) => Promise<{ success: boolean; data?: any; error?: string }>;

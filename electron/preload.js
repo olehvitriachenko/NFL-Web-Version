@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('electron', {
         getAgentById: (id) => ipcRenderer.invoke('db:getAgentById', id),
         deleteAgent: (id) => ipcRenderer.invoke('db:deleteAgent', id),
         updateAgent: (id, agent) => ipcRenderer.invoke('db:updateAgent', id, agent),
+        saveIllustration: (illustration) => ipcRenderer.invoke('db:saveIllustration', illustration),
+        getAllIllustrations: () => ipcRenderer.invoke('db:getAllIllustrations'),
+        updateIllustrationPdfPath: (id, pdfPath) => ipcRenderer.invoke('db:updateIllustrationPdfPath', id, pdfPath),
     },
     rates: {
         getRate: (params) => ipcRenderer.invoke('rates:getRate', params),

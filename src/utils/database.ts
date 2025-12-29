@@ -8,6 +8,7 @@ const isElectron =
 class IndexedDBStorage {
   private dbName = "nfl-db";
   private storeName = "agents";
+  private illustrationsStoreName = "illustrations";
   private db: IDBDatabase | null = null;
 
   async init(): Promise<void> {
@@ -28,6 +29,13 @@ class IndexedDBStorage {
             autoIncrement: true,
           });
           objectStore.createIndex("email", "email", { unique: false });
+        }
+        if (!db.objectStoreNames.contains(this.illustrationsStoreName)) {
+          const illustrationsStore = db.createObjectStore(this.illustrationsStoreName, {
+            keyPath: "id",
+          });
+          illustrationsStore.createIndex("email", "email", { unique: false });
+          illustrationsStore.createIndex("date", "date", { unique: false });
         }
       };
     });
@@ -91,6 +99,60 @@ class IndexedDBStorage {
 
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
+    });
+  }
+
+  async saveIllustration(illustration: any): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.illustrationsStoreName], "readwrite");
+      const store = transaction.objectStore(this.illustrationsStoreName);
+      const request = store.put({
+        ...illustration,
+        createdAt: new Date().toISOString(),
+      });
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getAllIllustrations(): Promise<any[]> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.illustrationsStoreName], "readonly");
+      const store = transaction.objectStore(this.illustrationsStoreName);
+      const request = store.getAll();
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async updateIllustrationPdfPath(id: string, pdfPath: string): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.illustrationsStoreName], "readwrite");
+      const store = transaction.objectStore(this.illustrationsStoreName);
+      const getRequest = store.get(id);
+
+      getRequest.onsuccess = () => {
+        const illustration = getRequest.result;
+        if (!illustration) {
+          reject(new Error('Illustration not found'));
+          return;
+        }
+
+        illustration.pdfPath = pdfPath;
+        const putRequest = store.put(illustration);
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 }
@@ -159,6 +221,40 @@ class SQLiteStorage {
     }
     return result.data || null;
   }
+
+  async saveIllustration(illustration: any): Promise<void> {
+    if (!window.electron?.db) {
+      throw new Error("Electron IPC not available");
+    }
+
+    const result = await window.electron.db.saveIllustration(illustration);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to save illustration");
+    }
+  }
+
+  async getAllIllustrations(): Promise<any[]> {
+    if (!window.electron?.db) {
+      throw new Error("Electron IPC not available");
+    }
+
+    const result = await window.electron.db.getAllIllustrations();
+    if (!result.success) {
+      throw new Error(result.error || "Failed to get illustrations");
+    }
+    return result.data || [];
+  }
+
+  async updateIllustrationPdfPath(id: string, pdfPath: string): Promise<void> {
+    if (!window.electron?.db) {
+      throw new Error("Electron IPC not available");
+    }
+
+    const result = await window.electron.db.updateIllustrationPdfPath(id, pdfPath);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to update illustration PDF path");
+    }
+  }
 }
 
 // Database interface
@@ -204,6 +300,30 @@ class Database {
       // Для IndexedDB ищем в массиве
       const agents = await this.getAllAgents();
       return agents.find(a => a.id === id) || null;
+    }
+  }
+
+  async saveIllustration(illustration: any): Promise<void> {
+    if (isElectron) {
+      await (this.storage as SQLiteStorage).saveIllustration(illustration);
+    } else {
+      await (this.storage as IndexedDBStorage).saveIllustration(illustration);
+    }
+  }
+
+  async getAllIllustrations(): Promise<any[]> {
+    if (isElectron) {
+      return await (this.storage as SQLiteStorage).getAllIllustrations();
+    } else {
+      return await (this.storage as IndexedDBStorage).getAllIllustrations();
+    }
+  }
+
+  async updateIllustrationPdfPath(id: string, pdfPath: string): Promise<void> {
+    if (isElectron) {
+      await (this.storage as SQLiteStorage).updateIllustrationPdfPath(id, pdfPath);
+    } else {
+      await (this.storage as IndexedDBStorage).updateIllustrationPdfPath(id, pdfPath);
     }
   }
 }

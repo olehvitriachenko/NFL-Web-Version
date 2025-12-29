@@ -383,6 +383,74 @@ export const EmailQuotePage = () => {
       
       if (filePath) {
         console.log('[EmailQuotePage] PDF generated successfully:', filePath);
+        
+        // Save illustration to database
+        try {
+          await db.init();
+          
+          // Format date for illustration (e.g., "December 25, 2025")
+          const formatDate = (date: Date) => {
+            return date.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            });
+          };
+          
+          // Generate policy code from quote data
+          const genderDisplay = shortSex(insured.sex) === 'M' ? 'M' : 'F';
+          const smokingDisplay = insured.smokingHabit === 'Non-smoker' ? 'N' : 'S';
+          const productCode = product.split(' ')[0] || 'PWL'; // Extract product code (e.g., "PWL" from "PWL - 30")
+          const policyCode = `${productCode} - ${insured.age} - ${genderDisplay} - ${smokingDisplay}`;
+          
+          // Calculate monthly payment from premium
+          // totalPremium is the modal premium (for the selected payment mode)
+          // totalAnnualPremium is the annual premium
+          // For illustration, we want to store the monthly equivalent
+          // Use totalAnnualPremium if available, otherwise convert totalPremium based on payment mode
+          let monthlyPayment = 0;
+          if (premiumResult.totalAnnualPremium && premiumResult.totalAnnualPremium > 0) {
+            // Convert annual premium to monthly
+            monthlyPayment = premiumResult.totalAnnualPremium / 12;
+          } else if (premiumResult.totalPremium && premiumResult.totalPremium > 0) {
+            // Fallback: convert modal premium to monthly based on payment mode
+            const modeMap: Record<string, number> = {
+              Monthly: 1,
+              Quarterly: 3,
+              'Semi-Annual': 6,
+              Annual: 12,
+            };
+            const months = modeMap[paymentMode] || 12;
+            monthlyPayment = premiumResult.totalPremium / months;
+          }
+          
+          const illustration = {
+            id: String(quoteData.id),
+            name: `${clientFirstName} ${clientLastName}`.trim(),
+            email: clientEmail,
+            policyCode: policyCode,
+            date: formatDate(new Date()),
+            deathBenefit: faceAmount,
+            monthlyPayment: monthlyPayment,
+            pdfPath: filePath,
+            product: product,
+            company: company,
+            faceAmount: faceAmount,
+            paymentMode: paymentMode,
+            insuredAge: insured.age,
+            insuredSex: insured.sex,
+            insuredSmokingHabit: insured.smokingHabit,
+            agentId: agentData?.id ? parseInt(agentData.id) : undefined,
+            quoteId: String(quoteData.id),
+          };
+          
+          await db.saveIllustration(illustration);
+          console.log('[EmailQuotePage] Illustration saved to database:', illustration);
+        } catch (error) {
+          console.error('[EmailQuotePage] Error saving illustration:', error);
+          // Don't block PDF opening if illustration save fails
+        }
+        
         // Open PDF in system default application
         try {
           console.log('[EmailQuotePage] Opening PDF file:', filePath);
