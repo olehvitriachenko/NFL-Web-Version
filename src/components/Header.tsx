@@ -1,5 +1,5 @@
-import { FiLogOut } from "react-icons/fi";
-import nflLogo from "/nfl_brand_logo.png";
+import nflLogo from "/branded_logo_trans.png";
+import { TbLogout } from "react-icons/tb";
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -7,7 +7,7 @@ interface HeaderProps {
 
 export const Header = ({ onLogout }: HeaderProps) => {
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white px-[10.8px] py-[7.2px] shadow-sm z-50">
+    <header className="fixed top-0 left-0 right-0 px-[10.8px] py-[7.2px] z-50">
       <div className="w-full flex items-center justify-between m-0">
         <div className="flex items-center gap-[3.6px]">
           <img
@@ -19,12 +19,12 @@ export const Header = ({ onLogout }: HeaderProps) => {
         </div>
         {onLogout && (
           <button
-            className="p-[3.6px] text-[#0D175C] hover:bg-gray-100 transition-colors"
+            className="p-[3.6px] text-[#2F80ED] hover:bg-gray-100 transition-colors"
             style={{ borderRadius: 10 }}
             onClick={onLogout}
             aria-label="Logout"
           >
-            <FiLogOut size={24} />
+            <TbLogout size={30} />
           </button>
         )}
       </div>

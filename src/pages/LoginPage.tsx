@@ -16,10 +16,10 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center px-[10px]">
+    <div className="min-h-screen bg-white flex items-center justify-center px-[10px]">
       <div className="w-full max-w-md">
         <div
-          className="bg-white shadow-lg px-[10px] py-[15px] flex flex-col gap-[60px]"
+          className="px-[10px] py-[15px] flex flex-col gap-[60px]"
           style={{ borderRadius: 10 }}
         >
           {/* Logo */}
@@ -31,14 +31,13 @@ export const LoginPage = () => {
                 className="h-28 object-contain"
               />
             </div>
-            <h1 className="text-4xl font-bold text-[#000000] mb-6">
+            <h1 className="text-4xl font-bold text-black mb-6">
               Welcome to
-            </h1>
-            <h2 className="text-4xl font-bold text-[#0D175C] mb-8">
+              <br />
               National Farm Life
-            </h2>
+            </h1>
             <p className="text-gray-500 text-base">
-              Please choose your login method
+              Please login
             </p>
           </div>
 
@@ -50,7 +49,7 @@ export const LoginPage = () => {
               disabled={isOpening}
               className="shadow-md"
             >
-              {isOpening ? "OPENING..." : "START WITH NFL"}
+              {isOpening ? "OPENING..." : "LOGIN WITH NFLIC"}
             </Button>
 
             {isOpening && (

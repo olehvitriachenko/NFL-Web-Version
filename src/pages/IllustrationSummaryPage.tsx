@@ -5,7 +5,7 @@ import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { navigateBack } from "../utils/navigation";
 import { BORDER } from "../constants/theme";
-import { FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { useQuickFormStore } from "../stores/QuickFormStore";
 import { getIllustrationData } from "../services/illustrationSummary";
 import { shortSex } from "../utils/shortSex";
@@ -276,42 +276,42 @@ export const IllustrationSummaryPage = () => {
       deathBenefit: { guaranteed: number | string; midpoint: number | string; current: number | string };
     };
   }) => (
-    <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
+    <div className="bg-white p-6 rounded-lп" style={{ borderRadius: BORDER.borderRadius }}>
       <h2 className="text-xl font-bold text-[#000000] mb-4">{title}</h2>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto border border-gray-200 rounded-lg px-3">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700"></th>
-              <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Guaranteed</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Midpoint</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Current</th>
+              <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Guaranteed</th>
+              <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Midpoint</th>
+              <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Current</th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-gray-100">
-              <td className="py-3 px-4 text-[#000000] font-medium">Premiums:</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.premiums.guaranteed)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.premiums.midpoint)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.premiums.current)}</td>
+              <td className="py-3 text-[#000000] font-medium">Premiums</td>
+              <td className="py-3 text-center text-[#000000]"><span className="border-gray-200 rounded-lg px-2">{formatNumber(data.premiums.guaranteed)}</span></td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.premiums.midpoint)}</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.premiums.current)}</td>
             </tr>
             <tr className="border-b border-gray-100">
-              <td className="py-3 px-4 text-[#000000] font-medium">Cash Surrender Value:</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.cashSurrenderValue.guaranteed)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.cashSurrenderValue.midpoint)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.cashSurrenderValue.current)}</td>
+              <td className="py-3 text-[#000000] font-medium">Cash Surrender Value</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.cashSurrenderValue.guaranteed)}</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.cashSurrenderValue.midpoint)}</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.cashSurrenderValue.current)}</td>
             </tr>
             <tr className="border-b border-gray-100">
-              <td className="py-3 px-4 text-[#000000] font-medium">Total Paid-up:</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.totalPaidUp.guaranteed)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.totalPaidUp.midpoint)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.totalPaidUp.current)}</td>
+              <td className="py-3 text-[#000000] font-medium">Total Paid-up</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.totalPaidUp.guaranteed)}</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.totalPaidUp.midpoint)}</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.totalPaidUp.current)}</td>
             </tr>
             <tr>
-              <td className="py-3 px-4 text-[#000000] font-medium">Death Benefit:</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.deathBenefit.guaranteed)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.deathBenefit.midpoint)}</td>
-              <td className="py-3 px-4 text-right text-[#000000]">{formatNumber(data.deathBenefit.current)}</td>
+              <td className="py-3 text-[#000000] font-medium">Death Benefit</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.deathBenefit.guaranteed)}</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.deathBenefit.midpoint)}</td>
+              <td className="py-3 text-center text-[#000000]">{formatNumber(data.deathBenefit.current)}</td>
             </tr>
           </tbody>
         </table>
@@ -338,7 +338,7 @@ export const IllustrationSummaryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-white">
       <OfflineIndicator />
       <PageHeader
         title="Illustration Summary"
@@ -349,24 +349,30 @@ export const IllustrationSummaryPage = () => {
         <div className="w-full max-w-[600px]">
           <div className="flex flex-col gap-6">
             {/* Policy Details Card */}
-            <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
+            <div className="bg-white p-6 rounded-lg shadow-md" style={{ borderRadius: BORDER.borderRadius }}>
               <h2 className="text-xl font-bold text-[#000000] mb-2">{illustrationData.policy.type}</h2>
-              <p className="text-gray-600 mb-2">{illustrationData.policy.details}</p>
+              <p className="text-black font-medium mb-2">{illustrationData.policy.details}</p>
               <p className="text-gray-600">
-                Initial Contract Premium: <span className="font-semibold text-[#000000]">{illustrationData.policy.initialPremium}</span>
+                Initial Contract Premium: {illustrationData.policy.initialPremium}
               </p>
             </div>
 
             {/* Prepay Policy Card */}
-            <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-300" style={{ borderRadius: BORDER.borderRadius }}>
               <div className={`flex items-center justify-between ${isPrepayOpen ? 'mb-4' : ''}`}>
                 <h2 className="text-xl font-bold text-[#000000]">Prepay Policy</h2>
+                <div className="flex items-center gap-3 flex-1 mx-4">
+                  <div className="flex-1 h-px bg-gray-300"></div>
+                </div>
                 <button 
                   onClick={() => setIsPrepayOpen(!isPrepayOpen)}
-                  className="p-2 text-[#0D175C] hover:bg-gray-100 transition-colors"
-                  style={{ borderRadius: BORDER.borderRadius }}
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
                 >
-                  {isPrepayOpen ? <FiChevronUp size={24} /> : <FiChevronDown size={24} />}
+                  {isPrepayOpen ? (
+                    <FiChevronDown className="text-[#0D175C]" size={16} />
+                  ) : (
+                    <FiChevronRight className="text-[#0D175C]" size={16} />
+                  )}
                 </button>
               </div>
               

@@ -1,4 +1,6 @@
+import { COLORS } from "@/constants/theme";
 import { FiArrowLeft, FiHome } from "react-icons/fi";
+import { IoMdHome } from "react-icons/io";
 
 interface PageHeaderProps {
   title: string;
@@ -8,7 +10,7 @@ interface PageHeaderProps {
 
 export const PageHeader = ({ title, onBack, onHome }: PageHeaderProps) => {
   return (
-    <header className="bg-white px-6 py-4 shadow-sm sticky top-0 z-[100]">
+    <header className="bg-white px-6 py-4 sticky top-0 z-[100]">
       <div className="max-w-7xl mx-auto flex items-center">
         <div className="flex-1 flex items-center">
           {onBack && (
@@ -18,7 +20,7 @@ export const PageHeader = ({ title, onBack, onHome }: PageHeaderProps) => {
               onClick={onBack}
               aria-label="Back"
             >
-              <FiArrowLeft size={20} />
+              <FiArrowLeft size={25} />
             </button>
           )}
         </div>
@@ -33,7 +35,7 @@ export const PageHeader = ({ title, onBack, onHome }: PageHeaderProps) => {
               onClick={onHome}
               aria-label="Home"
             >
-              <FiHome size={20} />
+              <IoMdHome size={30} color={COLORS.PRIMARY_LIGHT} />
             </button>
           )}
         </div>

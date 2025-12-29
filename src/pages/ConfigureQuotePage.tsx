@@ -229,6 +229,7 @@ export const ConfigureQuotePage = () => {
   const [accidentalDeathAmount, setAccidentalDeathAmount] = useState(
     storeAccidentalDeathData?.value ? formatNumberWithCommas(storeAccidentalDeathData.value) : "0"
   );
+  const [accidentalDeathAmountError, setAccidentalDeathAmountError] = useState<string>("");
   const [dependentChild, setDependentChild] = useState(storeDependentChild || false);
   const [dependentChildAmount, setDependentChildAmount] = useState(
     storeDependentChildValue ? formatNumberWithCommas(storeDependentChildValue) : "1000"
@@ -411,24 +412,58 @@ export const ConfigureQuotePage = () => {
     });
   }, [waiverOfPremium, faceAmount, updateConfigure]);
 
-  // Adjust accidental death amount if it exceeds limits
+  // Validate accidental death amount
+  const validateAccidentalDeathAmount = (value: string): string => {
+    if (!accidentalDeath) return "";
+    
+    const faceAmountValue = parseFormattedNumber(faceAmount);
+    const amount = parseFormattedNumber(value);
+    const MIN_ACCIDENTAL_DEATH = 10000;
+    const MAX_ACCIDENTAL_DEATH = Math.min(300000, faceAmountValue);
+    
+    if (!value || amount === 0) {
+      return "Amount is required";
+    }
+    
+    if (amount < MIN_ACCIDENTAL_DEATH) {
+      return `Minimum amount is $${formatNumberWithCommas(MIN_ACCIDENTAL_DEATH)}`;
+    }
+    
+    if (amount > MAX_ACCIDENTAL_DEATH) {
+      return `Maximum amount is $${formatNumberWithCommas(MAX_ACCIDENTAL_DEATH)}`;
+    }
+    
+    return "";
+  };
+
+  // Adjust accidental death amount if it exceeds limits and validate when faceAmount changes
   useEffect(() => {
-    if (!accidentalDeath) return;
+    if (!accidentalDeath) {
+      setAccidentalDeathAmountError("");
+      return;
+    }
     
     const faceAmountValue = parseFormattedNumber(faceAmount);
     const currentAmount = parseFormattedNumber(accidentalDeathAmount);
     const MIN_ACCIDENTAL_DEATH = 10000;
     const MAX_ACCIDENTAL_DEATH = Math.min(300000, faceAmountValue);
     
-    if (currentAmount < MIN_ACCIDENTAL_DEATH) {
-      const newAmount = formatNumberWithCommas(MIN_ACCIDENTAL_DEATH);
-      if (newAmount !== accidentalDeathAmount) {
-        setAccidentalDeathAmount(newAmount);
-      }
-    } else if (currentAmount > MAX_ACCIDENTAL_DEATH) {
-      const newAmount = formatNumberWithCommas(MAX_ACCIDENTAL_DEATH);
-      if (newAmount !== accidentalDeathAmount) {
-        setAccidentalDeathAmount(newAmount);
+    // Validate and set error
+    const error = validateAccidentalDeathAmount(accidentalDeathAmount);
+    setAccidentalDeathAmountError(error);
+    
+    // Auto-adjust if out of bounds when faceAmount changes
+    if (currentAmount > 0) {
+      if (currentAmount < MIN_ACCIDENTAL_DEATH) {
+        const newAmount = formatNumberWithCommas(MIN_ACCIDENTAL_DEATH);
+        if (newAmount !== accidentalDeathAmount) {
+          setAccidentalDeathAmount(newAmount);
+        }
+      } else if (currentAmount > MAX_ACCIDENTAL_DEATH) {
+        const newAmount = formatNumberWithCommas(MAX_ACCIDENTAL_DEATH);
+        if (newAmount !== accidentalDeathAmount) {
+          setAccidentalDeathAmount(newAmount);
+        }
       }
     }
   }, [faceAmount, accidentalDeath]); // Removed accidentalDeathAmount from dependencies to prevent infinite loop
@@ -538,14 +573,12 @@ export const ConfigureQuotePage = () => {
     const MIN_GUARANTEED_INSURABILITY = 5000;
     
     const maxAllowed = Math.min(faceAmountValue, MAX_GUARANTEED_INSURABILITY);
-    // Rounding: Math.floor(maxAllowed / (2 * 5000)) * 5000
-    const roundedMax = Math.floor(maxAllowed / (2 * STEP)) * STEP;
-    const finalMax = Math.min(roundedMax, MAX_GUARANTEED_INSURABILITY);
+    console.log('finalMax', maxAllowed);
     
-    if (finalMax < MIN_GUARANTEED_INSURABILITY) return [];
+    if (maxAllowed < MIN_GUARANTEED_INSURABILITY) return [];
     
     const amounts: number[] = [];
-    for (let amount = MIN_GUARANTEED_INSURABILITY; amount <= finalMax; amount += STEP) {
+    for (let amount = MIN_GUARANTEED_INSURABILITY; amount <= maxAllowed; amount += STEP) {
       amounts.push(amount);
     }
     
@@ -691,7 +724,30 @@ export const ConfigureQuotePage = () => {
     navigate({ to: "/home" });
   };
 
+  // Check if form is valid
+  const isFormValid = (): boolean => {
+    // Check accidental death amount validation
+    if (accidentalDeath) {
+      // If accidental death is enabled, check for errors
+      if (accidentalDeathAmountError) {
+        return false;
+      }
+      // Also validate the current value to catch any edge cases
+      const validationError = validateAccidentalDeathAmount(accidentalDeathAmount);
+      if (validationError) {
+        return false;
+      }
+    }
+    
+    // Add other validation checks here if needed
+    
+    return true;
+  };
+
   const handleDetails = () => {
+    if (!isFormValid()) {
+      return; // Prevent navigation if form is invalid
+    }
     navigate({ to: "/quote-details" });
   };
 
@@ -768,7 +824,7 @@ export const ConfigureQuotePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-white">
       <OfflineIndicator />
       <PageHeader
         title="Configure Quote"
@@ -893,16 +949,16 @@ export const ConfigureQuotePage = () => {
             </div>
 
             {/* Plan Code */}
-            <div className="text-sm text-gray-600">Plan code {planCode}</div>
+            <div className="text-sm text-gray-600">Plan code <span className="text-black font-bold">{planCode}</span></div>
 
             {/* Toggle Options */}
             <div
-              className="flex flex-col gap-0 bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md"
+              className="flex flex-col gap-0 bg-white overflow-hidden transition-all duration-300"
               style={{ borderRadius: BORDER.borderRadius }}
             >
               {/* Waiver of Premium */}
               {isWaiverOfPremiumEligible && (
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                   <span className="text-[#000000] font-medium">
                     Waiver of Premium
                   </span>
@@ -914,14 +970,14 @@ export const ConfigureQuotePage = () => {
                       className="sr-only peer"
                       disabled={!isWaiverOfPremiumEligible}
                     />
-                    <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0D175C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#0D175C] hover:shadow-md ${!isWaiverOfPremiumEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                    <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#39458C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border peer-checked:after:border-[#39458C] after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#39458C] hover:shadow-md ${!isWaiverOfPremiumEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                   </label>
                 </div>
               )}
 
               {/* Accidental Death */}
               {isAccidentalDeathEligible && (
-                <div className="border-b border-gray-200">
+                <div>
                   <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                     <span className="text-[#000000] font-medium">
                       Accidental Death
@@ -934,7 +990,7 @@ export const ConfigureQuotePage = () => {
                         className="sr-only peer"
                         disabled={!isAccidentalDeathEligible}
                       />
-                      <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0D175C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#0D175C] hover:shadow-md ${!isAccidentalDeathEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                      <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#39458C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border peer-checked:after:border-[#39458C] after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#39458C] hover:shadow-md ${!isAccidentalDeathEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
                 {accidentalDeath && (
@@ -945,8 +1001,8 @@ export const ConfigureQuotePage = () => {
                         onClick={() => setAccidentalDeathType("ADB")}
                         className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
                           accidentalDeathType === "ADB"
-                            ? "bg-[#0D175C] text-white"
-                            : "bg-gray-200 text-[#000000]"
+                            ? "bg-[#39458C] text-white"
+                            : "bg-[#0D175C80] text-white"
                         }`}
                         style={{ borderRadius: BORDER.borderRadius }}
                       >
@@ -956,8 +1012,8 @@ export const ConfigureQuotePage = () => {
                         onClick={() => setAccidentalDeathType("ADD")}
                         className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
                           accidentalDeathType === "ADD"
-                            ? "bg-[#0D175C] text-white"
-                            : "bg-gray-200 text-[#000000]"
+                            ? "bg-[#39458C] text-white"
+                            : "bg-[#0D175C80] text-white"
                         }`}
                         style={{ borderRadius: BORDER.borderRadius }}
                       >
@@ -975,11 +1031,28 @@ export const ConfigureQuotePage = () => {
                         onChange={(e) => {
                           const formatted = formatInputValue(e.target.value);
                           setAccidentalDeathAmount(formatted);
+                          // Validate on change
+                          const error = validateAccidentalDeathAmount(formatted);
+                          setAccidentalDeathAmountError(error);
                         }}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[#000000] focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 transition-all duration-200"
+                        onBlur={() => {
+                          // Validate on blur
+                          const error = validateAccidentalDeathAmount(accidentalDeathAmount);
+                          setAccidentalDeathAmountError(error);
+                        }}
+                        className={`w-full px-4 py-3 bg-white border rounded-lg text-[#000000] focus:outline-none focus:ring-4 transition-all duration-200 ${
+                          accidentalDeathAmountError
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                            : "border-gray-300 focus:border-[#0D175C] focus:ring-[#0D175C]/10"
+                        }`}
                         style={{ borderRadius: BORDER.borderRadius }}
                         placeholder="0"
                       />
+                      {accidentalDeathAmountError && (
+                        <div className="text-xs text-red-600 mt-1">
+                          {accidentalDeathAmountError}
+                        </div>
+                      )}
                       <div className="flex justify-between text-xs text-gray-500">
                         <span>Min: $10,000.00</span>
                         <span>Max: ${formatNumberWithCommas(getAccidentalDeathMaxAmount())}</span>
@@ -992,7 +1065,7 @@ export const ConfigureQuotePage = () => {
 
               {/* Dependent Child */}
               {isDependentChildEligible && (
-                <div className="border-b border-gray-200">
+                <div>
                   <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                     <span className="text-[#000000] font-medium">
                       Dependent Child
@@ -1005,7 +1078,7 @@ export const ConfigureQuotePage = () => {
                         className="sr-only peer"
                         disabled={!isDependentChildEligible}
                       />
-                      <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0D175C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#0D175C] hover:shadow-md ${!isDependentChildEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                      <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#39458C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border peer-checked:after:border-[#39458C] after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#39458C] hover:shadow-md ${!isDependentChildEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
                   {dependentChild && (
@@ -1018,8 +1091,8 @@ export const ConfigureQuotePage = () => {
                             onClick={() => setDependentChildAmount(formattedAmount)}
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 min-w-[100px] ${
                               parseFormattedNumber(dependentChildAmount) === amount
-                                ? "bg-[#0D175C] text-white"
-                                : "bg-gray-200 text-[#000000]"
+                                ? "bg-[#39458C] text-white"
+                                : "bg-[#0D175C80] text-white"
                             }`}
                             style={{ borderRadius: BORDER.borderRadius }}
                           >
@@ -1049,7 +1122,7 @@ export const ConfigureQuotePage = () => {
                         className="sr-only peer"
                         disabled={!isGuaranteedInsurabilityEligible}
                       />
-                      <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0D175C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#0D175C] hover:shadow-md ${!isGuaranteedInsurabilityEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                      <div className={`w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#39458C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border peer-checked:after:border-[#39458C] after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#39458C] hover:shadow-md ${!isGuaranteedInsurabilityEligible ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
                   {guaranteedInsurability && (
@@ -1062,8 +1135,8 @@ export const ConfigureQuotePage = () => {
                             onClick={() => setGuaranteedInsurabilityAmount(formattedAmount)}
                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 min-w-[100px] ${
                               parseFormattedNumber(guaranteedInsurabilityAmount) === amount
-                                ? "bg-[#0D175C] text-white"
-                                : "bg-gray-200 text-[#000000]"
+                                ? "bg-[#39458C] text-white"
+                                : "bg-[#0D175C80] text-white"
                             }`}
                             style={{ borderRadius: BORDER.borderRadius }}
                           >
@@ -1082,7 +1155,7 @@ export const ConfigureQuotePage = () => {
 
             {/* Pick your premium (Reverse Lookup) */}
             <div
-              className="flex flex-col gap-0 bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md"
+              className="flex flex-col gap-0 bg-white overflow-hidden transition-all duration-300"
               style={{ borderRadius: BORDER.borderRadius }}
             >
               <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
@@ -1096,7 +1169,7 @@ export const ConfigureQuotePage = () => {
                     onChange={(e) => setPickYourPremium(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0D175C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#0D175C] hover:shadow-md"></div>
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#39458C]/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border peer-checked:after:border-[#39458C] after:rounded-full after:h-5 after:w-5 after:transition-all duration-300 ease-in-out peer-checked:bg-[#39458C] hover:shadow-md"></div>
                 </label>
               </div>
               {pickYourPremium && (
@@ -1135,7 +1208,7 @@ export const ConfigureQuotePage = () => {
 
             {/* Details Button */}
             <div className="flex flex-col gap-4">
-              <Button onClick={handleDetails} fullWidth>
+              <Button onClick={handleDetails} fullWidth disabled={!isFormValid()}>
                 DETAILS
               </Button>
             </div>

@@ -5,7 +5,7 @@ import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
 import { navigateBack } from "../utils/navigation";
-import { BORDER, COLORS } from "../constants/theme";
+import { BORDER } from "../constants/theme";
 import { useQuickFormStore } from "../stores/QuickFormStore";
 
 export const ClientInformationPage = () => {
@@ -17,7 +17,7 @@ export const ClientInformationPage = () => {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [sex, setSex] = useState<"male" | "female">("male");
   const [smokingHabit, setSmokingHabit] = useState<"Non Smoker" | "Standard">("Non Smoker");
-  const [rateTable, setRateTable] = useState<"None" | "2" | "3" | "4" | "5" | "6">("None");
+  const [rateTable, setRateTable] = useState<"None" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12" | "13" | "14" | "15" | "16">("None");
   const [rateFlatExtra, setRateFlatExtra] = useState("");
 
   // Load saved data if exists (only insured data, not payor)
@@ -83,7 +83,7 @@ export const ClientInformationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-white">
       <OfflineIndicator />
       <PageHeader title="Client Information" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
@@ -121,10 +121,10 @@ export const ClientInformationPage = () => {
               <div className="flex gap-4">
                 <button
                   onClick={() => setSex("male")}
-                  className={`flex-1 py-4 px-6 rounded-lg font-medium transition-all duration-200 ${
+                  className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     sex === "male"
-                      ? "bg-[#0D175C] text-white"
-                      : "bg-gray-200 text-[#000000]"
+                      ? "bg-[#39458C] text-white"
+                      : "bg-[#0D175C80] text-white"
                   }`}
                   style={{ borderRadius: BORDER.borderRadius }}
                 >
@@ -132,10 +132,10 @@ export const ClientInformationPage = () => {
                 </button>
                 <button
                   onClick={() => setSex("female")}
-                  className={`flex-1 py-4 px-6 rounded-lg font-medium transition-all duration-200 ${
+                  className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     sex === "female"
-                      ? "bg-[#0D175C] text-white"
-                      : "bg-gray-200 text-[#000000]"
+                      ? "bg-[#39458C] text-white"
+                      : "bg-[#0D175C80] text-white"
                   }`}
                   style={{ borderRadius: BORDER.borderRadius }}
                 >
@@ -150,10 +150,10 @@ export const ClientInformationPage = () => {
               <div className="flex gap-4">
                 <button
                   onClick={() => setSmokingHabit("Non Smoker")}
-                  className={`flex-1 py-4 px-6 rounded-lg font-medium transition-all duration-200 ${
+                  className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     smokingHabit === "Non Smoker"
-                      ? "bg-[#0D175C] text-white"
-                      : "bg-gray-200 text-[#000000]"
+                      ? "bg-[#39458C] text-white"
+                      : "bg-[#0D175C80] text-white"
                   }`}
                   style={{ borderRadius: BORDER.borderRadius }}
                 >
@@ -161,10 +161,10 @@ export const ClientInformationPage = () => {
                 </button>
                 <button
                   onClick={() => setSmokingHabit("Standard")}
-                  className={`flex-1 py-4 px-6 rounded-lg font-medium transition-all duration-200 ${
+                  className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     smokingHabit === "Standard"
-                      ? "bg-[#0D175C] text-white"
-                      : "bg-gray-200 text-[#000000]"
+                      ? "bg-[#39458C] text-white"
+                      : "bg-[#0D175C80] text-white"
                   }`}
                   style={{ borderRadius: BORDER.borderRadius }}
                 >
@@ -176,15 +176,26 @@ export const ClientInformationPage = () => {
             {/* Rate - Table Section */}
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-600">Rate - Table</label>
-              <div className="flex gap-2 flex-wrap">
-                {(["None", "2", "3", "4", "5", "6"] as const).map((value) => (
+              <div className="flex gap-2 overflow-x-auto">
+                <button
+                  onClick={() => setRateTable("None")}
+                  className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex-shrink-0 ${
+                    rateTable === "None"
+                      ? "bg-[#39458C] text-white"
+                      : "bg-[#0D175C80] text-white"
+                  }`}
+                  style={{ borderRadius: BORDER.borderRadius }}
+                >
+                  None
+                </button>
+                {Array.from({ length: 15 }, (_, i) => (i + 2).toString() as "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12" | "13" | "14" | "15" | "16").map((value) => (
                   <button
                     key={value}
                     onClick={() => setRateTable(value)}
-                    className={`py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                    className={`py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex-shrink-0 ${
                       rateTable === value
-                        ? "bg-[#0D175C] text-white"
-                        : "bg-gray-200 text-[#000000]"
+                        ? "bg-[#39458C] text-white"
+                        : "bg-[#0D175C80] text-white"
                     }`}
                     style={{ borderRadius: BORDER.borderRadius }}
                   >

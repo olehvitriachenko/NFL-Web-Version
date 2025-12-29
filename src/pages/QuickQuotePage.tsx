@@ -4,8 +4,8 @@ import { OfflineIndicator } from '../components/OfflineIndicator';
 import { navigateBack } from '../utils/navigation';
 import { BORDER } from '../constants/theme';
 import { useQuickFormStore } from '../stores/QuickFormStore';
-import nflLogo from "/nfl_brand_logo.png";
-import amlLogo from "/aml_brand_logo.jpg";
+import nflLogo from "/Company/company-a-logo.png";
+import amlLogo from "/Company/company-b-logo.png";
 
 export const QuickQuotePage = () => {
   const navigate = useNavigate();
@@ -37,14 +37,14 @@ export const QuickQuotePage = () => {
       <PageHeader title="Quick Quote" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
         <div className="w-full max-w-[600px]">
-          <h1 className="text-center text-[#000000] font-bold" style={{ fontSize: '23px', marginBottom: '100px' }}>
+          <h1 className="text-center text-[#000000] font-bold" style={{ fontSize: '23px', marginBottom: '50px' }}>
             Select a company before proceeding
           </h1>
-          <div className="flex flex-col gap-6">
+          <div className="flex justify-between gap-6">
             {/* National FARM LIFE */}
             <button
               onClick={() => handleCompanySelect('nfl')}
-              className="bg-white p-6 shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="bg-gray-200 p-6 px-12 shadow-sm hover:shadow-md transition-all flex items-center justify-center"
               style={{ borderRadius: BORDER.borderRadius }}
             >
               <img
@@ -57,7 +57,7 @@ export const QuickQuotePage = () => {
             {/* American FARM LIFE */}
             <button
               onClick={() => handleCompanySelect('aml')}
-              className="bg-white p-6 shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="bg-gray-200 p-6 px-12 shadow-sm hover:shadow-md transition-all flex items-center justify-center"
               style={{ borderRadius: BORDER.borderRadius }}
             >
               <img

@@ -79,9 +79,9 @@ export const QuotesMailboxPage = () => {
       <PageHeader title="Mail" onBack={handleBack} onHome={handleHome} />
       
       {/* Sent Banner */}
-      <div className="bg-[#0D175C] py-3">
+      <div className="bg-[#39458C] w-[calc(100%-90px)] rounded-lg mx-auto py-2">
         <div className="max-w-2xl mx-auto px-4">
-          <h2 className="text-white text-base font-medium">Sent</h2>
+          <h2 className="text-white text-base font-bold">Sent</h2>
         </div>
       </div>
 
@@ -103,20 +103,22 @@ export const QuotesMailboxPage = () => {
                   {quote.policyType}
                 </h3>
                 <p className="text-sm text-gray-600 mb-2">
-                  <span className="font-medium">Date/Time:</span> {quote.dateTime}
-                </p>
-                <p className="text-base font-bold text-[#000000] mb-1">
-                  Amount: {formatCurrency(quote.amount)}
-                </p>
-                <p className="text-sm text-gray-700">
-                  Monthly Cost: {formatCurrency(quote.monthlyCost)}/Monthly
+                  {quote.dateTime}
                 </p>
               </div>
               
-              <div className="flex justify-end mt-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-base font-bold text-[#000000] mb-1">
+                    {formatCurrency(quote.amount)}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    {formatCurrency(quote.monthlyCost)}/Monthly
+                  </p>
+                </div>
                 <button
                   onClick={() => handleViewPdf(quote.id)}
-                  className="bg-[#0D175C] text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-[#0D175C]/90 transition-colors"
+                  className="bg-[#39458C] text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-[#0D175C]/90 transition-colors flex-shrink-0"
                   style={{ borderRadius: 10 }}
                 >
                   VIEW PDF

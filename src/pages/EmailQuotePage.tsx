@@ -411,7 +411,7 @@ export const EmailQuotePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-white">
       <OfflineIndicator />
       <PageHeader title="Email Quote" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
@@ -419,7 +419,7 @@ export const EmailQuotePage = () => {
           <div className="flex flex-col gap-6">
             {/* Quote Details */}
             {quoteData && (
-              <div className="bg-gray-100 p-5 rounded-lg border border-gray-200" style={{ borderRadius: BORDER.borderRadius }}>
+              <div className="bg-gray-100 p-5 rounded-lg" style={{ borderRadius: BORDER.borderRadius }}>
                 <p className="text-[#000000] text-base mb-2 font-medium">{quoteData.details}</p>
                 <p className="text-[#000000] text-base">{quoteData.initialPremium}</p>
               </div>
@@ -431,7 +431,7 @@ export const EmailQuotePage = () => {
                 Agent Information
               </h2>
               {agentInfo && (
-                <div className="bg-gray-100 p-5 rounded-lg mb-3 border border-gray-200" style={{ borderRadius: BORDER.borderRadius }}>
+                <div className="bg-gray-100 p-5 rounded-lg mb-3" style={{ borderRadius: BORDER.borderRadius }}>
                   <div className="flex justify-between items-start mb-3">
                     <p className="text-[#000000] text-base font-medium">
                       {agentInfo.firstName} {agentInfo.lastName} (test account)
@@ -441,12 +441,14 @@ export const EmailQuotePage = () => {
                   <p className="text-[#000000] text-base">{agentInfo.email || "web.dev.test@nflic.com"}</p>
                 </div>
               )}
-              <button
-                onClick={handleEditInformation}
-                className="text-[#0D175C] hover:text-[#39458C] transition-colors text-sm font-medium underline"
-              >
-                EDIT INFORMATION
-              </button>
+              <div className="text-center">
+                <button
+                  onClick={handleEditInformation}
+                  className="text-[#0D175C] hover:text-[#39458C] transition-colors text-sm font-medium underline"
+                >
+                  EDIT INFORMATION
+                </button>
+              </div>
             </div>
 
             {/* Client Information */}
@@ -454,7 +456,7 @@ export const EmailQuotePage = () => {
               <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.PRIMARY }}>
                 Client Information
               </h2>
-              <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
+              <div className="bg-white" style={{ borderRadius: BORDER.borderRadius }}>
                 <div className="flex flex-col gap-4">
                 <FormField
                   label="First Name"
@@ -548,7 +550,7 @@ export const EmailQuotePage = () => {
                 <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.PRIMARY }}>
                   Payor Information
                 </h2>
-                <div className="bg-white p-6 rounded-lg shadow-sm" style={{ borderRadius: BORDER.borderRadius }}>
+                <div className="bg-white" style={{ borderRadius: BORDER.borderRadius }}>
                   <div className="flex flex-col gap-4">
                   <FormField
                     label="Payor First Name"

@@ -28,7 +28,7 @@ export const HomePage = () => {
           <h1 className="text-[48px] font-bold text-[#000000] text-center mb-12">
             Welcome!
           </h1>
-          <div className="flex flex-col items-center gap-[15px]">
+          <div className="grid grid-cols-2 gap-[15px]">
             <MenuButton
               icon={FiUser}
               label="Agent Info"
@@ -54,14 +54,6 @@ export const HomePage = () => {
               label="Illustration History"
               onClick={() => navigate({ to: "/illustration-history" })}
             />
-            {/* TODO: Implement these routes */}
-            {/* 
-            <MenuButton
-              icon={FiFile}
-              label="Generate Mock PDF"
-              onClick={() => navigate({ to: "/generate-pdf" })}
-            /> 
-            */}
           </div>
         </div>
       </div>

@@ -99,7 +99,7 @@ export const SetupClientPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-white">
       <OfflineIndicator />
       <PageHeader title="Setup Client" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
@@ -125,7 +125,6 @@ export const SetupClientPage = () => {
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-[#000000] focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 transition-all duration-200"
                 style={{ borderRadius: BORDER.borderRadius }}
               />
-              <div className="text-sm text-gray-500 mt-1">{formatDate(effectiveStartDate)}</div>
             </div>
 
             {/* Insured Section */}
@@ -133,7 +132,7 @@ export const SetupClientPage = () => {
               <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.PRIMARY }}>
                 Insured
               </h2>
-              <div className="bg-white p-4 rounded-lg border border-gray-300 mb-3" style={{ borderRadius: BORDER.borderRadius }}>
+              <div className="bg-white p-1 rounded-lg border border-gray-300 mb-3" style={{ borderRadius: BORDER.borderRadius }}>
                 <input
                   type="text"
                   value={insuredInfo || ""}
@@ -194,7 +193,7 @@ export const SetupClientPage = () => {
                   </div>
                 </>
               ) : (
-                <Button onClick={handleAddPayor} fullWidth variant="primary">
+                <Button onClick={handleAddPayor} variant="primary">
                   ADD
                 </Button>
               )}

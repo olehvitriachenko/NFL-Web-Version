@@ -21,12 +21,12 @@ export const Button = ({
     'px-6 py-3.5 text-base font-semibold transition-all uppercase tracking-wide';
   const variantClasses =
     variant === 'primary'
-      ? 'bg-[#0D175C] text-white hover:bg-[#39458C] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0'
+      ? 'text-white bg-[#39458C] hover:bg-[#39458C]/80 hover:shadow-md active:translate-y-0'
       : 'bg-white text-[#0D175C] border border-gray-300 hover:bg-gray-50';
   
   const borderRadius = '10px';
   const widthClasses = fullWidth ? 'w-full' : '';
-  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : '';
+  const disabledClasses = disabled ? 'opacity-50 bg-gray-300 cursor-not-allowed' : '';
 
   return (
     <button

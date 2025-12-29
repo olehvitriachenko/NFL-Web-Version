@@ -21,6 +21,7 @@ export const AgentInfoPage = () => {
     phone: '',
     email: '',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -30,6 +31,81 @@ export const AgentInfoPage = () => {
       ...prev,
       [name]: value,
     }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateField = (name: string, value: string): string => {
+    if (!value.trim()) {
+      if (name === 'zipCode') {
+        return 'ZIP code is required';
+      }
+      return `${name === 'firstName' ? 'First Name' : name === 'lastName' ? 'Last Name' : name.charAt(0).toUpperCase() + name.slice(1)} is required`;
+    }
+    
+    if (name === 'zipCode' && value.trim().length !== 5) {
+      return 'ZIP code must be 5 digits';
+    }
+    
+    if (name === 'zipCode' && !/^\d+$/.test(value.trim())) {
+      return 'ZIP code must be 5 digits';
+    }
+    
+    return '';
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    if (error) {
+      setErrors((prev) => ({ ...prev, [name]: error }));
+    } else {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First Name is required';
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last Name is required';
+    }
+    if (!formData.street.trim()) {
+      newErrors.street = 'Street is required';
+    }
+    if (!formData.city.trim()) {
+      newErrors.city = 'City is required';
+    }
+    if (!formData.state.trim()) {
+      newErrors.state = 'State is required';
+    }
+    if (!formData.zipCode.trim()) {
+      newErrors.zipCode = 'ZIP code is required';
+    } else if (formData.zipCode.trim().length !== 5 || !/^\d+$/.test(formData.zipCode.trim())) {
+      newErrors.zipCode = 'ZIP code must be 5 digits';
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   useEffect(() => {
@@ -51,6 +127,7 @@ export const AgentInfoPage = () => {
           email: lastAgent.email,
         });
         setEditingId(lastAgent.id);
+        setErrors({});
       }
     };
     initializeData();
@@ -58,6 +135,11 @@ export const AgentInfoPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       await db.init();
       if (editingId) {
@@ -80,6 +162,7 @@ export const AgentInfoPage = () => {
             phone: updatedAgent.phone,
             email: updatedAgent.email,
           });
+          setErrors({});
         }
       } else {
         // Create new agent
@@ -103,6 +186,7 @@ export const AgentInfoPage = () => {
             phone: newAgent.phone,
             email: newAgent.email,
           });
+          setErrors({});
         }
       }
       setRefreshKey((prev) => prev + 1);
@@ -146,6 +230,7 @@ export const AgentInfoPage = () => {
             phone: currentAgent.phone,
             email: currentAgent.email,
           });
+          setErrors({});
         }
       }
     } catch (error) {
@@ -154,7 +239,7 @@ export const AgentInfoPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-white">
       <OfflineIndicator />
       <PageHeader title="Agent Info" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
@@ -162,55 +247,67 @@ export const AgentInfoPage = () => {
           {/* New/Edit Form */}
           <form
             onSubmit={handleSubmit}
-            className="bg-white p-8 shadow-sm"
+            className="bg-white p-8"
             style={{ borderRadius: 10 }}
           >
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-4">
               <FormField
                 label="First Name"
                 name="firstName"
-                placeholder="First Name"
                 value={formData.firstName}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.firstName}
+                required
               />
               <FormField
                 label="Last Name"
                 name="lastName"
-                placeholder="Last Name"
                 value={formData.lastName}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.lastName}
+                required
               />
               <FormField
                 label="Street"
                 name="street"
-                placeholder="Street"
                 value={formData.street}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.street}
+                required
               />
               <FormField
                 label="City"
                 name="city"
-                placeholder="City"
                 value={formData.city}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.city}
+                required
               />
               <div className="flex gap-4">
                 <div className="flex-1">
                   <FormField
                     label="State"
                     name="state"
-                    placeholder="State"
                     value={formData.state}
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.state}
+                    required
                   />
                 </div>
                 <div className="flex-1">
                   <FormField
                     label="ZIP Code"
                     name="zipCode"
-                    placeholder="00000"
                     value={formData.zipCode}
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.zipCode}
+                    required
                   />
                 </div>
               </div>
@@ -218,17 +315,20 @@ export const AgentInfoPage = () => {
                 label="Phone"
                 name="phone"
                 type="tel"
-                placeholder="Phone"
                 value={formData.phone}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.phone}
+                required
               />
               <FormField
-                label="Email (required)"
+                label="Email"
                 name="email"
                 type="email"
-                placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.email}
                 required
               />
             </div>
@@ -252,6 +352,7 @@ export const AgentInfoPage = () => {
                       phone: '',
                       email: '',
                     });
+                    setErrors({});
                     setEditingId(null);
                   }}
                 >

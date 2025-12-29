@@ -18,16 +18,15 @@ export const FormField = ({
   value,
   onChange,
   onBlur,
-  required,
   error,
 }: FormFieldProps) => {
   return (
     <div>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-gray-600 mb-2"
+        className="block text-sm font-medium text-gray-500 mb-2"
       >
-        {label} {required && <span className="text-[#D32F2F]">*</span>}
+        {label}
       </label>
       <input
         id={name}
@@ -37,7 +36,6 @@ export const FormField = ({
         value={value}
         onChange={onChange}
         onBlur={onBlur}
-        required={required}
         style={{ borderRadius: 10 }}
         className={`w-full px-4 py-3 text-base text-[#000000] bg-white border transition-all focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 ${
           error

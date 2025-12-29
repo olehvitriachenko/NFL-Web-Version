@@ -525,8 +525,8 @@ export const IllustrationHistoryPage = () => {
                   <div className="flex flex-col gap-2 mt-3">
                     <div className="flex items-center gap-2">
                       <span
-                        className="px-2 py-1 text-xs font-medium text-gray-700 bg-green-100 rounded"
-                        style={{ backgroundColor: '#E8F5E9' }}
+                        className="px-2 py-1 text-xs font-medium text-gray-700 bg-green-100 rounded-full"
+                        style={{ backgroundColor: '#E8F9F0' }}
                       >
                         DEATH BENEFIT:
                       </span>
@@ -536,8 +536,8 @@ export const IllustrationHistoryPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span
-                        className="px-2 py-1 text-xs font-medium text-gray-700 bg-yellow-100 rounded"
-                        style={{ backgroundColor: '#FFF9C4' }}
+                        className="px-2 py-1 text-xs font-medium text-gray-700 rounded-full"
+                        style={{ backgroundColor: '#FFF4D9' }}
                       >
                         MONTHLY PAYMENT:
                       </span>
