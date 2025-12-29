@@ -49,10 +49,10 @@ export async function generatePDFFromHTML(
 }
 
 /**
- * Save PDF buffer to file
+ * Save PDF buffer to file (auto-saves to pdfs folder)
  * @param pdfBuffer - PDF buffer to save
- * @param defaultFileName - Default file name for save dialog
- * @returns Promise with file path or null if canceled
+ * @param defaultFileName - Default file name
+ * @returns Promise with file path or null if failed
  */
 export async function savePDFFile(
   pdfBuffer: Buffer,
@@ -64,12 +64,21 @@ export async function savePDFFile(
   }
 
   try {
-    const result = await window.electron!.pdf.saveFile(pdfBuffer, defaultFileName);
+    // Get userData path
+    const userDataResult = await window.electron!.app.getUserDataPath();
+    if (!userDataResult.success || !userDataResult.data) {
+      throw new Error('Could not get userData path');
+    }
+
+    const userDataPath = userDataResult.data;
+    const pdfsDir = `${userDataPath}/pdfs`;
+    const fileName = defaultFileName || `document_${Date.now()}.pdf`;
+    const filePath = `${pdfsDir}/${fileName}`;
+
+    // Save to pdfs folder automatically
+    const result = await window.electron!.pdf.saveFileToPath(pdfBuffer, filePath);
     
     if (!result.success) {
-      if (result.error?.includes('canceled')) {
-        return null; // User canceled
-      }
       throw new Error(result.error || 'Failed to save PDF');
     }
 
@@ -110,11 +119,11 @@ export async function savePDFFileToPath(
 }
 
 /**
- * Generate and save PDF from HTML in one step
+ * Generate and save PDF from HTML in one step (auto-saves to pdfs folder)
  * @param htmlContent - HTML string to convert to PDF
- * @param defaultFileName - Default file name for save dialog
+ * @param defaultFileName - Default file name
  * @param options - PDF generation options
- * @returns Promise with file path or null if canceled
+ * @returns Promise with file path or null if failed
  */
 export async function generateAndSavePDF(
   htmlContent: string,

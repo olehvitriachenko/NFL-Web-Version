@@ -342,7 +342,33 @@ export const EmailQuotePage = () => {
       console.log('[EmailQuotePage] Quote data:', quoteData);
       console.log('[EmailQuotePage] Agent data:', agentData);
       
-      // Generate PDF
+      // Get userData path for deterministic file path
+      let pdfDirectory: string;
+      if (!window.electron || !window.electron.app) {
+        alert('Electron API not available. Please restart the application.');
+        return;
+      }
+      try {
+        const userDataResult = await window.electron.app.getUserDataPath();
+        if (userDataResult.success && userDataResult.data) {
+          pdfDirectory = userDataResult.data;
+        } else {
+          throw new Error(userDataResult.error || 'Could not get userData path');
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        alert(`Error getting save directory: ${errorMessage}\n\nPlease restart the Electron application to apply the latest changes.`);
+        return;
+      }
+      
+      const illustrationsDir = `${pdfDirectory}/illustrations`;
+      const quoteId = String(quoteData.id);
+      const deterministicFileName = `quote_${quoteId}.pdf`;
+      const deterministicFilePath = `${illustrationsDir}/${deterministicFileName}`;
+      
+      console.log('[EmailQuotePage] Deterministic PDF path:', deterministicFilePath);
+      
+      // Generate PDF with deterministic path
       const filePath = await pdfService.generatePdf({
         quote: quoteData,
         agent: agentData,
@@ -350,6 +376,7 @@ export const EmailQuotePage = () => {
         insuredFirstName: clientFirstName,
         insuredLastName: clientLastName,
         companyLogoUri: companyLogoUri,
+        deterministicPath: deterministicFilePath,
       });
       
       console.log('[EmailQuotePage] PDF generation result:', filePath);
