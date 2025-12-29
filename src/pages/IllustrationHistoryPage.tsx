@@ -4,7 +4,7 @@ import { PageHeader } from '../components/PageHeader';
 import { OfflineIndicator } from '../components/OfflineIndicator';
 import { navigateBack } from '../utils/navigation';
 import { openPDFFile, generatePDFFromHTML, savePDFFileToPath } from '../utils/pdf';
-import { pdfService, type QuoteDataForPDF } from '../services/pdf/pdfService';
+import { pdfService, type QuoteDataForPDF, type AgentInfo } from '../services/pdf/pdfService';
 import { FiSearch } from 'react-icons/fi';
 
 interface Illustration {
@@ -256,7 +256,9 @@ export const IllustrationHistoryPage = () => {
       // Prepare quote data for PDF
       const quoteData: QuoteDataForPDF = {
         id: illustration.id,
-        company: illustration.company || 'CompanyA',
+        company: (illustration.company === 'CompanyA' || illustration.company === 'CompanyB') 
+          ? illustration.company 
+          : 'CompanyA',
         product: product,
         configureProduct: product,
         faceAmount: illustration.faceAmount || illustration.deathBenefit,
@@ -266,13 +268,15 @@ export const IllustrationHistoryPage = () => {
         created_at: createdAt,
         insured: {
           age: illustration.insured?.age || 30,
-          sex: illustration.insured?.sex || 'Male',
+          sex: (illustration.insured?.sex === 'Male' || illustration.insured?.sex === 'Female')
+            ? illustration.insured.sex
+            : 'Male',
           smokingHabit: illustration.insured?.smokingHabit || 'Non-smoker',
         },
       };
 
       // Get agent data if agentId is available
-      let agentData;
+      let agentData: AgentInfo | undefined;
       if (illustration.agentId && window.electron?.db) {
         try {
           const agentResult = await window.electron.db.getAgentById(illustration.agentId);
@@ -280,7 +284,6 @@ export const IllustrationHistoryPage = () => {
             agentData = {
               firstName: agentResult.data.firstName || '',
               lastName: agentResult.data.lastName || '',
-              id: agentResult.data.id?.toString() || '',
               email: agentResult.data.email || '',
               phone: agentResult.data.phone || '',
               street: agentResult.data.street || '',
