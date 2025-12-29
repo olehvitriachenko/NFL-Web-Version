@@ -1251,10 +1251,10 @@ class PdfService {
         return filePath;
       }
 
-      // Fallback to dialog-based save
+      // Fallback to auto-save in pdfs folder
       const fileName = `quote_${options.quote.id || Date.now()}_${Date.now()}.pdf`;
 
-      console.log("[PdfService] Saving PDF with filename:", fileName);
+      console.log("[PdfService] Auto-saving PDF with filename:", fileName);
 
       // Don't set margins in Electron options since @page in HTML already handles margins
       // The HTML template uses @page { margin: 0.5in; } which is handled by the browser
@@ -1265,7 +1265,7 @@ class PdfService {
       });
 
       if (!filePath) {
-        console.warn("[PdfService] PDF save dialog was canceled by user");
+        console.warn("[PdfService] PDF auto-save failed");
         return null;
       }
 
