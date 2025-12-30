@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
@@ -90,7 +89,6 @@ export const QuoteFormPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
-      <OfflineIndicator />
       <PageHeader
         title="Quick Client Setup"
         onBack={handleBack}

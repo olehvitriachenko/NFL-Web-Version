@@ -810,7 +810,7 @@ export function generatePDFHTMLTemplate(params: TemplateParams): string {
               <tr>
                 <th style="width: 50%;"></th>
                 <th style="text-align: center; padding-right: 15px;">Initial Death Benefit</th>
-                <th style="text-align: center;">Initial Premium ${quote.paymentMode}</th>
+                <th style="text-align: center;">Initial Premium ${quote.paymentMode || 'Monthly'}</th>
               </tr>
             </thead>
             <tbody>
@@ -905,7 +905,7 @@ export function generatePDFHTMLTemplate(params: TemplateParams): string {
         <div class="policy-value-right">
           <div style="margin-bottom: 15px; font-size: 9pt; text-align: center">
             <div>${formatCurrency(quote.faceAmount)}</div>
-            <div>Initial Contract Premium: ${formatCurrency(calculatedPremium)} ${quote.paymentMode || 'Annually'}</div>
+            <div>Initial Contract Premium: ${formatCurrency(calculatedPremium)} ${quote.paymentMode || 'Monthly'}</div>
           </div>
           
           <table class="policy-value-table">
@@ -1108,7 +1108,7 @@ export function generatePDFHTMLTemplate(params: TemplateParams): string {
       
       <div style="margin-top: 20px;">
         <div style="font-size: 10pt; text-align: center;">${formatCurrency(quote.faceAmount)}</div>
-        <div style="font-size: 10pt; text-align: center;">Contract Premium: ${formatCurrency(calculatedPremium)} ${quote.paymentMode}</div>
+        <div style="font-size: 10pt; text-align: center;">Contract Premium: ${formatCurrency(calculatedPremium)} ${quote.paymentMode || 'Monthly'}</div>
         ${!isTermProductForPdf ? '<div style="font-size: 10pt; text-align: center; margin-bottom: 10px;">Dividend Option: Paid Up Additions</div>' : '<div style="font-size: 10pt; text-align: center; margin-bottom: 10px;"></div>'}
         <table class="projected-values-table" style="width: 100%;">
           <thead>
@@ -1183,7 +1183,7 @@ export function generatePDFHTMLTemplate(params: TemplateParams): string {
       <div style="flex: 1; display: flex; flex-direction: column;">
         <div style="margin-top: 15px; text-align: center; font-size: 9pt;">
           <div style="font-size: 10pt; text-align: center;">${formatCurrency(quote.faceAmount)}</div>
-          <div style="font-size: 10pt; text-align: center;">Contract Premium: ${formatCurrency(calculatedPremium)} ${quote.paymentMode}</div>
+          <div style="font-size: 10pt; text-align: center;">Contract Premium: ${formatCurrency(calculatedPremium)} ${quote.paymentMode || 'Monthly'}</div>
           ${!isTermProductForPdf ? '<div style="font-size: 10pt; text-align: center; margin-bottom: 10px;">Dividend Option: Paid Up Additions</div>' : '<div style="font-size: 10pt; text-align: center; margin-bottom: 10px;"></div>'}
         </div>
         

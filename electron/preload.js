@@ -11,6 +11,11 @@ contextBridge.exposeInMainWorld('electron', {
         saveIllustration: (illustration) => ipcRenderer.invoke('db:saveIllustration', illustration),
         getAllIllustrations: () => ipcRenderer.invoke('db:getAllIllustrations'),
         updateIllustrationPdfPath: (id, pdfPath) => ipcRenderer.invoke('db:updateIllustrationPdfPath', id, pdfPath),
+        deleteIllustration: (id) => ipcRenderer.invoke('db:deleteIllustration', id),
+        deleteIllustrationByQuoteId: (quoteId) => ipcRenderer.invoke('db:deleteIllustrationByQuoteId', quoteId),
+        execute: (sql, params) => ipcRenderer.invoke('db:execute', sql, params),
+        query: (sql, params) => ipcRenderer.invoke('db:query', sql, params),
+        resetQuotesAndPDFs: () => ipcRenderer.invoke('db:resetQuotesAndPDFs'),
     },
     rates: {
         getRate: (params) => ipcRenderer.invoke('rates:getRate', params),
@@ -37,6 +42,9 @@ contextBridge.exposeInMainWorld('electron', {
         getTableNames: () => ipcRenderer.invoke('rates:getTableNames'),
         tableExists: (tableName) => ipcRenderer.invoke('rates:tableExists', tableName),
         getTableRecordCount: (tableName) => ipcRenderer.invoke('rates:getTableRecordCount', tableName),
+        getDatabaseVersion: (accessToken) => ipcRenderer.invoke('rates:getDatabaseVersion', accessToken),
+        downloadDatabase: (accessToken) => ipcRenderer.invoke('rates:downloadDatabase', accessToken),
+        updateDatabase: (accessToken) => ipcRenderer.invoke('rates:updateDatabase', accessToken),
     },
     pdf: {
         generateFromHTML: (htmlContent, options) => ipcRenderer.invoke('pdf:generateFromHTML', htmlContent, options),
@@ -48,5 +56,7 @@ contextBridge.exposeInMainWorld('electron', {
     },
     app: {
         getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
+        getAppPath: () => ipcRenderer.invoke('app:getAppPath'),
+        getPdfsPath: () => ipcRenderer.invoke('app:getPdfsPath'),
     },
 });

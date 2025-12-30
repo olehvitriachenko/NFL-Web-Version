@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
 import { navigateBack } from "../utils/navigation";
@@ -11,6 +10,9 @@ import { useQuickFormStore } from "../stores/QuickFormStore";
 import { shortSex } from "../utils/shortSex";
 import { pdfService, type QuoteDataForPDF } from "../services/pdf/pdfService";
 import { openPDFFile } from "../utils/pdf";
+import { quoteService, quickQuoteQueueService, syncService, pdfQueueService } from "../services/quotes";
+import type { QuickQuoteRequest } from "../types/quotes";
+import { getProductShortCode } from "../utils/productCode";
 
 export const EmailQuotePage = () => {
   const navigate = useNavigate();
@@ -23,6 +25,17 @@ export const EmailQuotePage = () => {
     getPremium,
     payorEnabled,
     company,
+    paymentMethod,
+    configureProduct,
+    waiverOfPremiumEnabled,
+    waiverOfPremiumValue,
+    accidentalDeathEnabled,
+    accidentalDeath,
+    dependentChildEnabled,
+    dependentChild,
+    guaranteedInsurabilityEnabled,
+    guaranteedInsurability,
+    payor,
   } = useQuickFormStore();
   const [agentInfo, setAgentInfo] = useState<any>(null);
   const [clientFirstName, setClientFirstName] = useState("");
@@ -384,71 +397,219 @@ export const EmailQuotePage = () => {
       if (filePath) {
         console.log('[EmailQuotePage] PDF generated successfully:', filePath);
         
-        // Save illustration to database
+        // Save quote to database and add to sync queue
         try {
-          await db.init();
+          console.log('[EmailQuotePage] Saving quote to database and adding to sync queue...');
           
-          // Format date for illustration (e.g., "December 25, 2025")
-          const formatDate = (date: Date) => {
-            return date.toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            });
+          // Prepare QuoteData for saving
+          const quoteDataForDb = {
+            company: company,
+            insured: {
+              age: insured.age,
+              sex: insured.sex,
+              smokingHabit: insured.smokingHabit,
+            },
+            payorEnabled: payorEnabled,
+            payor: payorEnabled && payor ? {
+              age: payor.age,
+              sex: payor.sex,
+              smokingHabit: payor.smokingHabit,
+            } : undefined,
+            product: product,
+            paymentMethod: paymentMethod || 'Regular',
+            paymentMode: paymentMode,
+            configureProduct: configureProduct || product,
+            basePlan: faceAmount,
+            waiverOfPremium: waiverOfPremiumEnabled,
+            waiverOfPremiumValue: waiverOfPremiumValue,
+            accidentalDeath: accidentalDeathEnabled,
+            dependentChild: dependentChildEnabled,
+            guaranteedInsurability: guaranteedInsurabilityEnabled,
+            faceAmount: faceAmount,
+            smokingHabit: insured.smokingHabit,
+            premium: premiumResult.totalPremium,
+            paymentMethod_details: paymentMethod || 'Regular',
+            status: 'draft' as const,
           };
           
-          // Generate policy code from quote data
-          const genderDisplay = shortSex(insured.sex) === 'M' ? 'M' : 'F';
-          const smokingDisplay = insured.smokingHabit === 'Non-smoker' ? 'N' : 'S';
-          const productCode = product.split(' ')[0] || 'PWL'; // Extract product code (e.g., "PWL" from "PWL - 30")
-          const policyCode = `${productCode} - ${insured.age} - ${genderDisplay} - ${smokingDisplay}`;
+          // Save quote to database
+          const newQuoteId = await quoteService.createQuote(quoteDataForDb);
+          console.log('[EmailQuotePage] Quote saved to database with ID:', newQuoteId);
           
-          // Calculate monthly payment from premium
-          // totalPremium is the modal premium (for the selected payment mode)
-          // totalAnnualPremium is the annual premium
-          // For illustration, we want to store the monthly equivalent
-          // Use totalAnnualPremium if available, otherwise convert totalPremium based on payment mode
-          let monthlyPayment = 0;
-          if (premiumResult.totalAnnualPremium && premiumResult.totalAnnualPremium > 0) {
-            // Convert annual premium to monthly
-            monthlyPayment = premiumResult.totalAnnualPremium / 12;
-          } else if (premiumResult.totalPremium && premiumResult.totalPremium > 0) {
-            // Fallback: convert modal premium to monthly based on payment mode
-            const modeMap: Record<string, number> = {
-              Monthly: 1,
-              Quarterly: 3,
-              'Semi-Annual': 6,
-              Annual: 12,
+          // Extract termLength from product name if it's a term product
+          // If not a term product, set to 0
+          const extractTermFromProduct = (productName: string): number => {
+            const shortCode = getProductShortCode(productName);
+            
+            // Check if it's a term product
+            if (shortCode?.startsWith('LT') || shortCode?.startsWith('ST')) {
+              const match = shortCode.match(/(\d+)/);
+              if (match) {
+                return parseInt(match[1], 10);
+              }
+            }
+            
+            // For WorkSitePlus Term
+            if (shortCode === 'WSP_TERM') {
+              const nameMatch = productName.match(/(\d+)\s*Year/);
+              if (nameMatch) {
+                return parseInt(nameMatch[1], 10);
+              }
+              return 20; // Default for WSP_TERM
+            }
+            
+            // Try to extract from product name
+            const nameMatch = productName.match(/(\d+)\s*Year/);
+            if (nameMatch) {
+              return parseInt(nameMatch[1], 10);
+            }
+            
+            // If not a term product, return 0
+            return 0;
+          };
+
+          const termLength = extractTermFromProduct(product || '');
+
+          // Prepare QuickQuoteRequest for backend
+          const quickQuoteRequest: QuickQuoteRequest = {
+            insuranceCompanyId: company === 'CompanyA' ? 1 : 2,
+            age: insured.age,
+            gender: insured.sex === 'Female' ? 'Female' : 'Male',
+            smoker: insured.smokingHabit === 'Smoker',
+            coverageAmount: faceAmount,
+            termLength: termLength,
+            state: clientState.trim() || '',
+            product: product || null,
+            paymentMethod: paymentMethod || null,
+            paymentMode: paymentMode || null,
+            waiverOfPremium: waiverOfPremiumEnabled || false,
+            accidentalDeathAdd: accidentalDeathEnabled && accidentalDeath?.type === 'ADD',
+            accidentalDeathAddValue: accidentalDeathEnabled && accidentalDeath?.type === 'ADD' 
+              ? String(accidentalDeath.value) 
+              : null,
+            accidentalDeathAdb: accidentalDeathEnabled && accidentalDeath?.type === 'ADB',
+            accidentalDeathAdbValue: accidentalDeathEnabled && accidentalDeath?.type === 'ADB' 
+              ? String(accidentalDeath.value) 
+              : null,
+            dependentChild: dependentChildEnabled || false,
+            dependentChildAmount: dependentChildEnabled && dependentChild 
+              ? String(dependentChild) 
+              : null,
+            guaranteedInsurability: guaranteedInsurabilityEnabled || false,
+            guaranteedAmount: guaranteedInsurabilityEnabled && guaranteedInsurability 
+              ? String(guaranteedInsurability) 
+              : null,
+            insuredFirstName: clientFirstName.trim() || null,
+            insuredLastName: clientLastName.trim() || null,
+            insuredEmail: clientEmail.trim() || null,
+            payorFirstName: payorEnabled && payorFirstName.trim() ? payorFirstName.trim() : null,
+            payorLastName: payorEnabled && payorLastName.trim() ? payorLastName.trim() : null,
+            payorEmail: payorEnabled && payorEmail.trim() ? payorEmail.trim() : null,
+          };
+          
+          // Add to queue for synchronization
+          await quickQuoteQueueService.addToQueue(
+            quickQuoteRequest,
+            filePath,
+            newQuoteId
+          );
+          console.log('[EmailQuotePage] Quote added to sync queue');
+          
+          // Save illustration to database with the correct quote ID
+          try {
+            await db.init();
+            
+            // Format date for illustration (e.g., "December 25, 2025")
+            const formatDate = (date: Date) => {
+              return date.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              });
             };
-            const months = modeMap[paymentMode] || 12;
-            monthlyPayment = premiumResult.totalPremium / months;
+            
+            // Generate policy code from quote data
+            const genderDisplay = shortSex(insured.sex) === 'M' ? 'M' : 'F';
+            const smokingDisplay = insured.smokingHabit === 'Non-smoker' ? 'N' : 'S';
+            const productCode = product.split(' ')[0] || 'PWL'; // Extract product code (e.g., "PWL" from "PWL - 30")
+            const policyCode = `${productCode} - ${insured.age} - ${genderDisplay} - ${smokingDisplay}`;
+            
+            // Calculate monthly payment from premium
+            // totalPremium is the modal premium (for the selected payment mode)
+            // totalAnnualPremium is the annual premium
+            // For illustration, we want to store the monthly equivalent
+            // Use totalAnnualPremium if available, otherwise convert totalPremium based on payment mode
+            let monthlyPayment = 0;
+            if (premiumResult.totalAnnualPremium && premiumResult.totalAnnualPremium > 0) {
+              // Convert annual premium to monthly
+              monthlyPayment = premiumResult.totalAnnualPremium / 12;
+            } else if (premiumResult.totalPremium && premiumResult.totalPremium > 0) {
+              // Fallback: convert modal premium to monthly based on payment mode
+              const modeMap: Record<string, number> = {
+                Monthly: 1,
+                Quarterly: 3,
+                'Semi-Annual': 6,
+                Annual: 12,
+              };
+              const months = modeMap[paymentMode] || 12;
+              monthlyPayment = premiumResult.totalPremium / months;
+            }
+            
+            // Save illustration with the new quote ID
+            const illustration = {
+              id: String(newQuoteId), // Use the new quote ID
+              firstName: clientFirstName.trim(),
+              lastName: clientLastName.trim(),
+              email: clientEmail,
+              policyCode: policyCode,
+              date: formatDate(new Date()),
+              deathBenefit: faceAmount,
+              monthlyPayment: monthlyPayment,
+              pdfPath: filePath,
+              product: product,
+              company: company,
+              faceAmount: faceAmount,
+              paymentMode: paymentMode,
+              insuredAge: insured.age,
+              insuredSex: insured.sex,
+              insuredSmokingHabit: insured.smokingHabit,
+              agentId: agentData?.id ? parseInt(agentData.id) : undefined,
+              quoteId: String(newQuoteId), // Store quote ID for reference
+            };
+            
+            await db.saveIllustration(illustration);
+            console.log('[EmailQuotePage] Illustration saved to database with quote ID:', newQuoteId);
+          } catch (error) {
+            console.error('[EmailQuotePage] Error saving illustration:', error);
+            // Don't block PDF opening if illustration save fails
           }
           
-          const illustration = {
-            id: String(quoteData.id),
-            name: `${clientFirstName} ${clientLastName}`.trim(),
-            email: clientEmail,
-            policyCode: policyCode,
-            date: formatDate(new Date()),
-            deathBenefit: faceAmount,
-            monthlyPayment: monthlyPayment,
-            pdfPath: filePath,
-            product: product,
-            company: company,
-            faceAmount: faceAmount,
-            paymentMode: paymentMode,
-            insuredAge: insured.age,
-            insuredSex: insured.sex,
-            insuredSmokingHabit: insured.smokingHabit,
-            agentId: agentData?.id ? parseInt(agentData.id) : undefined,
-            quoteId: String(quoteData.id),
-          };
+          // Add to PDF queue for Mail page
+          try {
+            await pdfQueueService.addToQueueWithPath(
+              {
+                quote: { ...quoteDataForDb, id: newQuoteId },
+                agent: agentData || undefined,
+                recipientEmail: clientEmail,
+                insuredFirstName: clientFirstName.trim() || undefined,
+                insuredLastName: clientLastName.trim() || undefined,
+              },
+              filePath
+            );
+            console.log('[EmailQuotePage] PDF added to queue for Mail page');
+          } catch (error) {
+            console.error('[EmailQuotePage] Error adding PDF to queue:', error);
+            // Don't block PDF opening if queue add fails
+          }
           
-          await db.saveIllustration(illustration);
-          console.log('[EmailQuotePage] Illustration saved to database:', illustration);
+          // Try to sync immediately if online
+          syncService.syncPendingQuickQuotes().catch(error => {
+            console.error('[EmailQuotePage] Error syncing quotes:', error);
+            // Don't block PDF opening if sync fails
+          });
         } catch (error) {
-          console.error('[EmailQuotePage] Error saving illustration:', error);
-          // Don't block PDF opening if illustration save fails
+          console.error('[EmailQuotePage] Error saving quote to database or adding to queue:', error);
+          // Don't block PDF opening if quote save fails
         }
         
         // Open PDF in system default application
@@ -480,7 +641,6 @@ export const EmailQuotePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <OfflineIndicator />
       <PageHeader title="Email Quote" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
         <div className="w-full max-w-[600px]">

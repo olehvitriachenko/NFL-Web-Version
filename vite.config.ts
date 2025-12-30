@@ -53,38 +53,7 @@ export default defineConfig({
             },
           },
           {
-            // API запити - CacheFirst (offline-first)
-            urlPattern: /\/api\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "api-cache",
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 днів
-              },
-              // Якщо кеш не знайдено, спробувати мережу
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            // Зовнішні API - CacheFirst з fallback
-            urlPattern: /^https:\/\/.*\/api\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "external-api-cache",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 1 день
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            // JSON дані - CacheFirst
+            // JSON дані (только статические файлы, не API) - CacheFirst
             urlPattern: /\.(?:json)$/,
             handler: "CacheFirst",
             options: {
@@ -95,6 +64,8 @@ export default defineConfig({
               },
             },
           },
+          // API запросы НЕ перехватываются Workbox - идут напрямую в сеть
+          // Это предотвращает CORS ошибки в браузере
         ],
         // Кешування навігації (HTML сторінок)
         navigationPreload: false,
@@ -102,7 +73,7 @@ export default defineConfig({
         clientsClaim: true,
       },
       devOptions: {
-        enabled: true,
+        enabled: false, // Отключаем service worker в dev режиме - он вызывает CORS ошибки
         type: "module",
       },
     }),

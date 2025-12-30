@@ -1,18 +1,21 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { Button } from "../components/Button";
 import nflLogo from "/nfl_brand_logo.png";
+import { startOAuthFlow } from "../services/oauth";
 
 export const LoginPage = () => {
-  const navigate = useNavigate();
   const [isOpening, setIsOpening] = useState(false);
 
   const handleStart = () => {
     setIsOpening(true);
-    // Симуляція відкриття браузера для автентифікації
-    setTimeout(() => {
-      navigate({ to: "/home" });
-    }, 2000);
+    try {
+      // Start OAuth authorization flow - will redirect to OAuth server
+      startOAuthFlow();
+      // Note: window.location.href will redirect, so code after this won't execute
+    } catch (error) {
+      console.error('Failed to start OAuth flow:', error);
+      setIsOpening(false);
+    }
   };
 
   return (

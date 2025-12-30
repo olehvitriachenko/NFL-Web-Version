@@ -51,6 +51,8 @@ export class SQLiteDatabase {
       CREATE TABLE IF NOT EXISTS illustrations (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
+        firstName TEXT,
+        lastName TEXT,
         email TEXT NOT NULL,
         policyCode TEXT,
         date TEXT NOT NULL,
@@ -67,8 +69,95 @@ export class SQLiteDatabase {
         agentId INTEGER,
         quoteId TEXT,
         createdAt TEXT NOT NULL
-      )
+      );
+      
+      CREATE TABLE IF NOT EXISTS quotes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company TEXT NOT NULL,
+        insured_age INTEGER NOT NULL,
+        insured_sex TEXT NOT NULL,
+        insured_smokingHabit TEXT NOT NULL,
+        payor_enabled INTEGER NOT NULL DEFAULT 0,
+        payor_age INTEGER,
+        payor_sex TEXT,
+        payor_smokingHabit TEXT,
+        product TEXT,
+        producti TEXT,
+        paymentMethod TEXT,
+        paymentMode TEXT,
+        configureProduct TEXT,
+        basePlan REAL,
+        waiverOfPremium INTEGER NOT NULL DEFAULT 0,
+        accidentalDeath INTEGER NOT NULL DEFAULT 0,
+        dependentChild INTEGER NOT NULL DEFAULT 0,
+        guaranteedInsurability INTEGER NOT NULL DEFAULT 0,
+        premiumChoice TEXT,
+        faceAmount REAL,
+        smokingHabit TEXT,
+        premium REAL,
+        paymentMethod_details TEXT,
+        status TEXT NOT NULL DEFAULT 'draft',
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      );
+      
+      CREATE TABLE IF NOT EXISTS quick_quote_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quote_id INTEGER,
+        request_data TEXT NOT NULL,
+        pdf_path TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        error_message TEXT,
+        backend_id INTEGER,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_quick_quote_queue_status ON quick_quote_queue(status);
+      CREATE INDEX IF NOT EXISTS idx_quick_quote_queue_backend_id ON quick_quote_queue(backend_id);
+      
+      CREATE TABLE IF NOT EXISTS pdf_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quote_id INTEGER NOT NULL,
+        agent_id INTEGER,
+        pdf_path TEXT,
+        recipient_email TEXT NOT NULL,
+        recipient_name TEXT,
+        recipient_first_name TEXT,
+        recipient_last_name TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        error_message TEXT,
+        death_benefit REAL,
+        monthly_payment REAL,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE,
+        FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE SET NULL
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_pdf_queue_status ON pdf_queue(status);
+      CREATE INDEX IF NOT EXISTS idx_pdf_queue_quote_id ON pdf_queue(quote_id);
     `);
+        // Migration: Add firstName and lastName columns if they don't exist
+        try {
+            const checkColumns = this.db.prepare(`
+        PRAGMA table_info(illustrations)
+      `);
+            const columns = checkColumns.all();
+            const columnNames = columns.map(col => col.name);
+            if (!columnNames.includes('firstName')) {
+                this.db.exec('ALTER TABLE illustrations ADD COLUMN firstName TEXT');
+            }
+            if (!columnNames.includes('lastName')) {
+                this.db.exec('ALTER TABLE illustrations ADD COLUMN lastName TEXT');
+            }
+        }
+        catch (error) {
+            console.warn('Error during migration (columns may already exist):', error);
+        }
     }
     /**
      * Получение экземпляра БД
@@ -143,12 +232,25 @@ export class SQLiteDatabase {
     }
     /**
      * Выполнение произвольного SQL запроса (INSERT/UPDATE/DELETE)
+     * Returns object with insertId and rowsAffected
      */
     execute(sql, params = []) {
         const db = this.getDb();
         const stmt = db.prepare(sql);
         const result = stmt.run(...params);
-        return Number(result.lastInsertRowid);
+        return {
+            insertId: Number(result.lastInsertRowid),
+            rowsAffected: result.changes
+        };
+    }
+    /**
+     * Execute SQL query and return rows (for SELECT queries)
+     */
+    executeQuery(sql, params = []) {
+        const db = this.getDb();
+        const stmt = db.prepare(sql);
+        const rows = stmt.all(...params);
+        return { rows };
     }
     /**
      * Закрытие соединения с БД
@@ -170,15 +272,19 @@ export class SQLiteDatabase {
      */
     createIllustration(illustration) {
         const db = this.getDb();
+        // Support both old format (name) and new format (firstName/lastName)
+        const name = illustration.name || (illustration.firstName && illustration.lastName
+            ? `${illustration.firstName} ${illustration.lastName}`.trim()
+            : '');
         const stmt = db.prepare(`
       INSERT INTO illustrations (
-        id, name, email, policyCode, date, deathBenefit, monthlyPayment,
+        id, name, firstName, lastName, email, policyCode, date, deathBenefit, monthlyPayment,
         pdfPath, product, company, faceAmount, paymentMode,
         insuredAge, insuredSex, insuredSmokingHabit, agentId, quoteId, createdAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-        stmt.run(illustration.id, illustration.name, illustration.email, illustration.policyCode || null, illustration.date, illustration.deathBenefit, illustration.monthlyPayment, illustration.pdfPath || null, illustration.product || null, illustration.company || null, illustration.faceAmount || null, illustration.paymentMode || null, illustration.insuredAge || null, illustration.insuredSex || null, illustration.insuredSmokingHabit || null, illustration.agentId || null, illustration.quoteId || null, new Date().toISOString());
+        stmt.run(illustration.id, name, illustration.firstName || null, illustration.lastName || null, illustration.email, illustration.policyCode || null, illustration.date, illustration.deathBenefit, illustration.monthlyPayment, illustration.pdfPath || null, illustration.product || null, illustration.company || null, illustration.faceAmount || null, illustration.paymentMode || null, illustration.insuredAge || null, illustration.insuredSex || null, illustration.insuredSmokingHabit || null, illustration.agentId || null, illustration.quoteId || null, new Date().toISOString());
     }
     /**
      * Получение всех илюстраций
@@ -188,26 +294,34 @@ export class SQLiteDatabase {
         const stmt = db.prepare('SELECT * FROM illustrations ORDER BY createdAt DESC');
         const results = stmt.all();
         // Transform database results to match Illustration interface
-        return results.map(row => ({
-            id: row.id,
-            name: row.name,
-            email: row.email,
-            policyCode: row.policyCode,
-            date: row.date,
-            deathBenefit: row.deathBenefit,
-            monthlyPayment: row.monthlyPayment,
-            pdfPath: row.pdfPath,
-            product: row.product,
-            company: row.company,
-            faceAmount: row.faceAmount,
-            paymentMode: row.paymentMode,
-            insured: {
-                age: row.insuredAge,
-                sex: row.insuredSex,
-                smokingHabit: row.insuredSmokingHabit,
-            },
-            agentId: row.agentId,
-        }));
+        return results.map(row => {
+            // Support both old format (name) and new format (firstName/lastName)
+            const name = row.firstName && row.lastName
+                ? `${row.firstName} ${row.lastName}`.trim()
+                : row.name || '';
+            return {
+                id: row.id,
+                name: name,
+                firstName: row.firstName || null,
+                lastName: row.lastName || null,
+                email: row.email,
+                policyCode: row.policyCode,
+                date: row.date,
+                deathBenefit: row.deathBenefit,
+                monthlyPayment: row.monthlyPayment,
+                pdfPath: row.pdfPath,
+                product: row.product,
+                company: row.company,
+                faceAmount: row.faceAmount,
+                paymentMode: row.paymentMode,
+                insured: {
+                    age: row.insuredAge,
+                    sex: row.insuredSex,
+                    smokingHabit: row.insuredSmokingHabit,
+                },
+                agentId: row.agentId,
+            };
+        });
     }
     /**
      * Обновление пути PDF для илюстрации
@@ -217,5 +331,63 @@ export class SQLiteDatabase {
         const stmt = db.prepare('UPDATE illustrations SET pdfPath = ? WHERE id = ?');
         const result = stmt.run(pdfPath, id);
         return result.changes > 0;
+    }
+    /**
+     * Удаление иллюстрации
+     */
+    deleteIllustration(id) {
+        const db = this.getDb();
+        const stmt = db.prepare('DELETE FROM illustrations WHERE id = ?');
+        const result = stmt.run(id);
+        return result.changes > 0;
+    }
+    /**
+     * Удаление иллюстрации по quoteId
+     */
+    deleteIllustrationByQuoteId(quoteId) {
+        const db = this.getDb();
+        const stmt = db.prepare('DELETE FROM illustrations WHERE quoteId = ?');
+        const result = stmt.run(String(quoteId));
+        return result.changes > 0;
+    }
+    /**
+     * Сброс базы данных: удаление всех котировок и PDF данных
+     * Используется только в dev режиме
+     */
+    resetQuotesAndPDFs() {
+        const db = this.getDb();
+        try {
+            // Получаем количество записей перед удалением
+            const quotesCount = db.prepare('SELECT COUNT(*) as count FROM quotes').get();
+            const illustrationsCount = db.prepare('SELECT COUNT(*) as count FROM illustrations').get();
+            const pdfQueueCount = db.prepare('SELECT COUNT(*) as count FROM pdf_queue').get();
+            const quickQuoteQueueCount = db.prepare('SELECT COUNT(*) as count FROM quick_quote_queue').get();
+            // Удаляем данные из таблиц
+            const deleteQuotes = db.prepare('DELETE FROM quotes');
+            const deleteIllustrations = db.prepare('DELETE FROM illustrations');
+            const deletePdfQueue = db.prepare('DELETE FROM pdf_queue');
+            const deleteQuickQuoteQueue = db.prepare('DELETE FROM quick_quote_queue');
+            // Выполняем удаление в транзакции
+            const transaction = db.transaction(() => {
+                deleteQuotes.run();
+                deleteIllustrations.run();
+                deletePdfQueue.run();
+                deleteQuickQuoteQueue.run();
+            });
+            transaction();
+            return {
+                success: true,
+                deletedCounts: {
+                    quotes: quotesCount.count,
+                    illustrations: illustrationsCount.count,
+                    pdfQueue: pdfQueueCount.count,
+                    quickQuoteQueue: quickQuoteQueueCount.count,
+                },
+            };
+        }
+        catch (error) {
+            console.error('Error resetting quotes and PDFs:', error);
+            throw error;
+        }
     }
 }

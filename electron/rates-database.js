@@ -4,6 +4,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { copyFile, readdir, unlink, stat } from 'fs/promises';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 /**
@@ -66,7 +67,8 @@ export class RatesDatabase {
                 }
             }
             this.db = new Database(this.dbPath, { readonly: true });
-            this.db.pragma('journal_mode = WAL');
+            // Не устанавливаем WAL режим для readonly базы - это вызывает ошибку
+            // WAL режим нужен только для баз с записью
             console.log('Rates database initialized at:', this.dbPath);
         }
         catch (error) {
@@ -660,5 +662,257 @@ export class RatesDatabase {
      */
     isConnected() {
         return this.db !== null;
+    }
+    /**
+     * Получение пути к директории для backup файлов
+     */
+    getBackupDirectory() {
+        const userDataPath = app.getPath('userData');
+        const backupDir = path.join(userDataPath, 'rates_backups');
+        if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir, { recursive: true });
+        }
+        return backupDir;
+    }
+    /**
+     * Создание резервной копии текущей базы данных
+     */
+    async createBackup() {
+        try {
+            if (!fs.existsSync(this.dbPath)) {
+                console.log('[RatesDatabase] No database file to backup');
+                return null;
+            }
+            const backupDir = this.getBackupDirectory();
+            const timestamp = Date.now();
+            const backupPath = path.join(backupDir, `rates_backup_${timestamp}.sqlite`);
+            await copyFile(this.dbPath, backupPath);
+            console.log('[RatesDatabase] Backup created:', backupPath);
+            return backupPath;
+        }
+        catch (error) {
+            console.error('[RatesDatabase] Error creating backup:', error);
+            throw error;
+        }
+    }
+    /**
+     * Замена базы данных новым файлом
+     */
+    async replaceDatabase(newDbPath) {
+        try {
+            console.log('[RatesDatabase] 🔄 Starting database replacement...');
+            console.log('[RatesDatabase] 📁 New database path:', newDbPath);
+            console.log('[RatesDatabase] 📁 Current database path:', this.dbPath);
+            // Закрываем текущее соединение (если еще не закрыто)
+            if (this.db) {
+                console.log('[RatesDatabase] 🔒 Closing current database connection...');
+                try {
+                    this.db.close();
+                    this.db = null;
+                    console.log('[RatesDatabase] ✅ Database connection closed');
+                }
+                catch (closeError) {
+                    console.warn('[RatesDatabase] ⚠️ Error closing database (continuing anyway):', closeError);
+                    this.db = null;
+                }
+            }
+            else {
+                console.log('[RatesDatabase] ℹ️ No active database connection to close');
+            }
+            // Удаляем WAL и SHM файлы, если они существуют (могут остаться от предыдущих сессий)
+            const walPath = `${this.dbPath}-wal`;
+            const shmPath = `${this.dbPath}-shm`;
+            try {
+                if (fs.existsSync(walPath)) {
+                    console.log('[RatesDatabase] 🗑️ Removing WAL file...');
+                    await unlink(walPath);
+                    console.log('[RatesDatabase] ✅ WAL file removed');
+                }
+                if (fs.existsSync(shmPath)) {
+                    console.log('[RatesDatabase] 🗑️ Removing SHM file...');
+                    await unlink(shmPath);
+                    console.log('[RatesDatabase] ✅ SHM file removed');
+                }
+            }
+            catch (walError) {
+                console.warn('[RatesDatabase] ⚠️ Error removing WAL/SHM files (continuing anyway):', walError);
+            }
+            // Создаем backup текущей БД (база уже должна быть закрыта)
+            console.log('[RatesDatabase] 💾 Creating backup...');
+            try {
+                await this.createBackup();
+                console.log('[RatesDatabase] ✅ Backup created');
+            }
+            catch (backupError) {
+                console.warn('[RatesDatabase] ⚠️ Error creating backup (continuing anyway):', backupError);
+                // Продолжаем даже если backup не удался
+            }
+            // Проверяем размер нового файла
+            console.log('[RatesDatabase] 📏 Checking new file size...');
+            const stats = await stat(newDbPath);
+            console.log('[RatesDatabase] 📊 New file size:', stats.size, 'bytes');
+            if (stats.size === 0) {
+                throw new Error('New database file is empty');
+            }
+            // Заменяем файл
+            console.log('[RatesDatabase] 🔄 Replacing database file...');
+            if (fs.existsSync(this.dbPath)) {
+                console.log('[RatesDatabase] 🗑️ Removing old database file...');
+                // Пробуем удалить несколько раз с задержкой, если файл заблокирован
+                let removed = false;
+                for (let i = 0; i < 10; i++) {
+                    try {
+                        // Пробуем удалить с правами записи
+                        await unlink(this.dbPath);
+                        removed = true;
+                        console.log('[RatesDatabase] ✅ Old database file removed');
+                        break;
+                    }
+                    catch (unlinkError) {
+                        console.log(`[RatesDatabase] ⏳ Retry ${i + 1}/10: File may be locked (${unlinkError.message}), waiting 100ms...`);
+                        if (i < 9) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                        else {
+                            // Последняя попытка - пробуем переименовать файл вместо удаления
+                            try {
+                                const oldPath = `${this.dbPath}.old.${Date.now()}`;
+                                await copyFile(this.dbPath, oldPath);
+                                await unlink(this.dbPath);
+                                console.log('[RatesDatabase] ✅ Old database file renamed and removed');
+                                removed = true;
+                                break;
+                            }
+                            catch (renameError) {
+                                throw new Error(`Failed to remove old database file after 10 attempts: ${unlinkError.message}`);
+                            }
+                        }
+                    }
+                }
+                if (!removed) {
+                    throw new Error('Failed to remove old database file');
+                }
+            }
+            else {
+                console.log('[RatesDatabase] ℹ️ Old database file does not exist, skipping removal');
+            }
+            console.log('[RatesDatabase] 📋 Copying new database file...');
+            await copyFile(newDbPath, this.dbPath);
+            console.log('[RatesDatabase] ✅ New database file copied');
+            // Валидация новой базы
+            console.log('[RatesDatabase] 🔍 Validating new database...');
+            const tempDb = new Database(this.dbPath, { readonly: true });
+            const tables = tempDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+            tempDb.close();
+            console.log('[RatesDatabase] 📊 Found tables:', tables.length);
+            if (tables.length === 0) {
+                throw new Error('New database has no tables');
+            }
+            console.log('[RatesDatabase] ✅ Database replaced successfully');
+            // Открываем новую базу
+            console.log('[RatesDatabase] 🔓 Reinitializing database connection...');
+            this.init();
+            console.log('[RatesDatabase] ✅ Database reinitialized');
+        }
+        catch (error) {
+            console.error('[RatesDatabase] ❌ Error replacing database:', error);
+            throw error;
+        }
+    }
+    /**
+     * Восстановление из последней резервной копии
+     */
+    async restoreFromBackup() {
+        try {
+            const backupDir = this.getBackupDirectory();
+            if (!fs.existsSync(backupDir)) {
+                console.log('[RatesDatabase] No backup directory found');
+                return false;
+            }
+            const files = await readdir(backupDir);
+            const backupFiles = files
+                .filter(f => f.startsWith('rates_backup_') && f.endsWith('.sqlite'))
+                .map(f => path.join(backupDir, f))
+                .sort()
+                .reverse(); // Новейшие сначала
+            if (backupFiles.length === 0) {
+                console.log('[RatesDatabase] No backup files found');
+                return false;
+            }
+            const latestBackup = backupFiles[0];
+            const stats = await stat(latestBackup);
+            if (stats.size === 0) {
+                console.log('[RatesDatabase] Latest backup is empty, trying next...');
+                if (backupFiles.length > 1) {
+                    return await this.restoreFromBackup(); // Рекурсивно пробуем следующий
+                }
+                return false;
+            }
+            // Восстанавливаем из backup
+            await this.replaceDatabase(latestBackup);
+            console.log('[RatesDatabase] Database restored from backup:', latestBackup);
+            return true;
+        }
+        catch (error) {
+            console.error('[RatesDatabase] Error restoring from backup:', error);
+            return false;
+        }
+    }
+    /**
+     * Очистка старых backup файлов (оставляет только последние 3)
+     */
+    async cleanupOldBackups() {
+        try {
+            const backupDir = this.getBackupDirectory();
+            if (!fs.existsSync(backupDir)) {
+                return;
+            }
+            const files = await readdir(backupDir);
+            const backupFiles = files
+                .filter(f => f.startsWith('rates_backup_') && f.endsWith('.sqlite'))
+                .map(f => ({
+                name: f,
+                path: path.join(backupDir, f),
+            }))
+                .sort((a, b) => {
+                // Сортируем по времени из имени файла (rates_backup_{timestamp}.sqlite)
+                const timestampA = parseInt(a.name.match(/rates_backup_(\d+)\.sqlite/)?.[1] || '0');
+                const timestampB = parseInt(b.name.match(/rates_backup_(\d+)\.sqlite/)?.[1] || '0');
+                return timestampB - timestampA; // Новейшие сначала
+            });
+            // Удаляем все кроме последних 3
+            const filesToDelete = backupFiles.slice(3);
+            for (const file of filesToDelete) {
+                try {
+                    await unlink(file.path);
+                    console.log('[RatesDatabase] Deleted old backup:', file.name);
+                }
+                catch (error) {
+                    console.warn('[RatesDatabase] Error deleting backup file:', file.name, error);
+                }
+            }
+        }
+        catch (error) {
+            console.error('[RatesDatabase] Error cleaning up old backups:', error);
+        }
+    }
+    /**
+     * Валидация базы данных (проверка наличия таблиц)
+     */
+    validateDatabase() {
+        try {
+            if (!this.db) {
+                this.init();
+            }
+            if (!this.db) {
+                return false;
+            }
+            const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+            return tables.length > 0;
+        }
+        catch (error) {
+            console.error('[RatesDatabase] Error validating database:', error);
+            return false;
+        }
     }
 }

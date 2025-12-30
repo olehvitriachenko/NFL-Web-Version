@@ -8,6 +8,11 @@ export interface ElectronAPI {
     saveIllustration: (illustration: any) => Promise<{ success: boolean; error?: string }>;
     getAllIllustrations: () => Promise<{ success: boolean; data: any[]; error?: string }>;
     updateIllustrationPdfPath: (id: string, pdfPath: string) => Promise<{ success: boolean; error?: string }>;
+    deleteIllustration: (id: string) => Promise<{ success: boolean; error?: string }>;
+    deleteIllustrationByQuoteId: (quoteId: string | number) => Promise<{ success: boolean; deleted?: boolean; error?: string }>;
+    execute: (sql: string, params?: any[]) => Promise<{ success: boolean; insertId?: number; rowsAffected?: number; error?: string }>;
+    query: (sql: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
+    resetQuotesAndPDFs: () => Promise<{ success: boolean; deletedCounts?: { quotes: number; illustrations: number; pdfQueue: number; quickQuoteQueue: number }; deletedFilesCount?: number; error?: string }>;
   };
   rates: {
     getRate: (params: any) => Promise<{ success: boolean; data?: any; error?: string }>;
@@ -48,6 +53,9 @@ export interface ElectronAPI {
     getTableNames: () => Promise<{ success: boolean; data?: string[]; error?: string }>;
     tableExists: (tableName: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
     getTableRecordCount: (tableName: string) => Promise<{ success: boolean; data?: number; error?: string }>;
+    getDatabaseVersion: (accessToken?: string) => Promise<{ success: boolean; data?: { rateDbVersion: string } | null; error?: string }>;
+    downloadDatabase: (accessToken?: string) => Promise<{ success: boolean; data?: string | null; error?: string }>;
+    updateDatabase: (accessToken?: string) => Promise<{ success: boolean; version?: string | null; message?: string; error?: string; restored?: boolean }>;
   };
   pdf: {
     generateFromHTML: (htmlContent: string, options?: {
@@ -69,6 +77,8 @@ export interface ElectronAPI {
   };
   app: {
     getUserDataPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+    getAppPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+    getPdfsPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
   };
 }
 

@@ -14,19 +14,28 @@ export const PDFViewer = ({ file, filePath, onClose, className = '' }: PDFViewer
 
   // Створюємо URL для iframe
   useEffect(() => {
+    const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
+    
     if (filePath) {
       // Якщо є шлях до файлу, використовуємо його
-      const isElectron = typeof window !== 'undefined' && window.location.protocol === 'file:';
       if (isElectron) {
         // В Electron конвертуємо шлях в file:// URL
         let url: string;
         if (filePath.startsWith('file://')) {
           url = filePath;
-        } else if (filePath.match(/^[A-Za-z]:\\/)) {
-          // Windows абсолютний шлях
-          url = `file:///${filePath.replace(/\\/g, '/')}`;
         } else {
-          url = `file:///${filePath.replace(/\\/g, '/')}`;
+          // Конвертуємо абсолютний шлях в file:// URL
+          // Для Windows: C:\path\to\file.pdf -> file:///C:/path/to/file.pdf
+          // Для macOS/Linux: /path/to/file.pdf -> file:///path/to/file.pdf
+          let normalizedPath = filePath.replace(/\\/g, '/');
+          
+          // Якщо це Windows шлях (починається з букви та :), додаємо /
+          if (normalizedPath.match(/^[A-Za-z]:/)) {
+            url = `file:///${normalizedPath}`;
+          } else {
+            // Для macOS/Linux просто додаємо file:///
+            url = `file://${normalizedPath}`;
+          }
         }
         console.log('[PDFViewer] Using file path for iframe:', url);
         setIframeUrl(url);

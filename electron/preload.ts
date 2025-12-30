@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld('electron', {
     saveIllustration: (illustration: any) => ipcRenderer.invoke('db:saveIllustration', illustration),
     getAllIllustrations: () => ipcRenderer.invoke('db:getAllIllustrations'),
     updateIllustrationPdfPath: (id: string, pdfPath: string) => ipcRenderer.invoke('db:updateIllustrationPdfPath', id, pdfPath),
+    deleteIllustration: (id: string) => ipcRenderer.invoke('db:deleteIllustration', id),
+    deleteIllustrationByQuoteId: (quoteId: string | number) => ipcRenderer.invoke('db:deleteIllustrationByQuoteId', quoteId),
+    execute: (sql: string, params?: any[]) => ipcRenderer.invoke('db:execute', sql, params),
+    query: (sql: string, params?: any[]) => ipcRenderer.invoke('db:query', sql, params),
+    resetQuotesAndPDFs: () => ipcRenderer.invoke('db:resetQuotesAndPDFs'),
   },
   rates: {
     getRate: (params: any) => ipcRenderer.invoke('rates:getRate', params),
@@ -52,6 +57,9 @@ contextBridge.exposeInMainWorld('electron', {
     getTableNames: () => ipcRenderer.invoke('rates:getTableNames'),
     tableExists: (tableName: string) => ipcRenderer.invoke('rates:tableExists', tableName),
     getTableRecordCount: (tableName: string) => ipcRenderer.invoke('rates:getTableRecordCount', tableName),
+    getDatabaseVersion: (accessToken?: string) => ipcRenderer.invoke('rates:getDatabaseVersion', accessToken),
+    downloadDatabase: (accessToken?: string) => ipcRenderer.invoke('rates:downloadDatabase', accessToken),
+    updateDatabase: (accessToken?: string) => ipcRenderer.invoke('rates:updateDatabase', accessToken),
   },
   pdf: {
     generateFromHTML: (htmlContent: string, options?: {
@@ -73,6 +81,8 @@ contextBridge.exposeInMainWorld('electron', {
   },
   app: {
     getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
+    getAppPath: () => ipcRenderer.invoke('app:getAppPath'),
+    getPdfsPath: () => ipcRenderer.invoke('app:getPdfsPath'),
   },
 });
 
@@ -89,6 +99,11 @@ declare global {
         saveIllustration: (illustration: any) => Promise<{ success: boolean; error?: string }>;
         getAllIllustrations: () => Promise<{ success: boolean; data: any[]; error?: string }>;
         updateIllustrationPdfPath: (id: string, pdfPath: string) => Promise<{ success: boolean; error?: string }>;
+        deleteIllustration: (id: string) => Promise<{ success: boolean; error?: string }>;
+        deleteIllustrationByQuoteId: (quoteId: string | number) => Promise<{ success: boolean; deleted?: boolean; error?: string }>;
+        execute: (sql: string, params?: any[]) => Promise<{ success: boolean; insertId?: number; rowsAffected?: number; error?: string }>;
+        query: (sql: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
+        resetQuotesAndPDFs: () => Promise<{ success: boolean; deletedCounts?: { quotes: number; illustrations: number; pdfQueue: number; quickQuoteQueue: number }; deletedFilesCount?: number; error?: string }>;
       };
       rates: {
         getRate: (params: any) => Promise<{ success: boolean; data?: any; error?: string }>;
@@ -129,6 +144,9 @@ declare global {
         getTableNames: () => Promise<{ success: boolean; data?: string[]; error?: string }>;
         tableExists: (tableName: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
         getTableRecordCount: (tableName: string) => Promise<{ success: boolean; data?: number; error?: string }>;
+        getDatabaseVersion: (accessToken?: string) => Promise<{ success: boolean; data?: { rateDbVersion: string } | null; error?: string }>;
+        downloadDatabase: (accessToken?: string) => Promise<{ success: boolean; data?: string | null; error?: string }>;
+        updateDatabase: (accessToken?: string) => Promise<{ success: boolean; version?: string | null; message?: string; error?: string; restored?: boolean }>;
       };
   pdf: {
     generateFromHTML: (htmlContent: string, options?: {
@@ -150,6 +168,8 @@ declare global {
   };
   app: {
     getUserDataPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+    getAppPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+    getPdfsPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
   };
     };
   }

@@ -210,12 +210,39 @@ function formatSmokingHabit(smokingHabit: string): string {
 
 /**
  * Convert premium to monthly based on payment mode
+ * Handles both standard modes (Monthly, Quarterly, Semi-Annual, Annual)
+ * and non-standard modes (EveryFourWeeks, SemiMonthly, BiWeekly, Weekly)
+ * 
+ * For non-standard modes, the premium passed in is the modal premium,
+ * which needs to be converted back to monthly equivalent.
+ * 
+ * Mode factors from premiumCalculator:
+ * - EveryFourWeeks: modal = monthly * (12/13), so monthly = modal * (13/12)
+ * - SemiMonthly: modal = monthly / 2, so monthly = modal * 2
+ * - BiWeekly: modal = monthly * (12/26), so monthly = modal * (26/12)
+ * - Weekly: modal = monthly * (12/52), so monthly = modal * (52/12)
  */
 function convertToMonthly(totalPremium: number, paymentMode: string): number {
+  // Handle non-standard payment modes first
+  if (paymentMode === 'EveryFourWeeks') {
+    return totalPremium * (13 / 12); // Convert from 4-weekly to monthly
+  }
+  if (paymentMode === 'SemiMonthly') {
+    return totalPremium * 2; // Convert from semi-monthly to monthly
+  }
+  if (paymentMode === 'BiWeekly') {
+    return totalPremium * (26 / 12); // Convert from bi-weekly to monthly
+  }
+  if (paymentMode === 'Weekly') {
+    return totalPremium * (52 / 12); // Convert from weekly to monthly
+  }
+
+  // Handle standard payment modes
   const modeMap: Record<string, number> = {
     Monthly: 1,
     Quarterly: 3,
     "Semi-Annual": 6,
+    SemiAnnual: 6, // Alternative format
     Annual: 12,
   };
 

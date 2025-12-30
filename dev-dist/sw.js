@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-d93339a4'], (function (workbox) { 'use strict';
+define(['./workbox-2ae722a1'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -82,7 +82,7 @@ define(['./workbox-d93339a4'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.lgvb14oc5l4"
+    "revision": "0.7ia3al56tpk"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -93,24 +93,6 @@ define(['./workbox-d93339a4'], (function (workbox) { 'use strict';
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 100,
       maxAgeSeconds: 31536000
-    })]
-  }), 'GET');
-  workbox.registerRoute(/\/api\/.*/i, new workbox.CacheFirst({
-    "cacheName": "api-cache",
-    plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 200,
-      maxAgeSeconds: 604800
-    }), new workbox.CacheableResponsePlugin({
-      statuses: [0, 200]
-    })]
-  }), 'GET');
-  workbox.registerRoute(/^https:\/\/.*\/api\/.*/i, new workbox.CacheFirst({
-    "cacheName": "external-api-cache",
-    plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 100,
-      maxAgeSeconds: 86400
-    }), new workbox.CacheableResponsePlugin({
-      statuses: [0, 200]
     })]
   }), 'GET');
   workbox.registerRoute(/\.(?:json)$/, new workbox.CacheFirst({

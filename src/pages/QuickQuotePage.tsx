@@ -1,6 +1,5 @@
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
-import { OfflineIndicator } from '../components/OfflineIndicator';
 import { navigateBack } from '../utils/navigation';
 import { BORDER } from '../constants/theme';
 import { useQuickFormStore } from '../stores/QuickFormStore';
@@ -33,7 +32,6 @@ export const QuickQuotePage = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
-      <OfflineIndicator />
       <PageHeader title="Quick Quote" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
         <div className="w-full max-w-[600px]">

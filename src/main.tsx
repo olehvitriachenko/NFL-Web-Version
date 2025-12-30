@@ -167,13 +167,23 @@ const router = createRouter({
   defaultNotFoundComponent: NotFoundComponent,
 });
 
-// Вимкнути Service Worker для Electron (file:// протокол не підтримує Service Worker)
-if (isElectron && 'serviceWorker' in navigator) {
+// Вимкнути Service Worker для Electron и в dev режиме (file:// протокол не підтримує Service Worker, а в dev он вызывает CORS ошибки)
+if ('serviceWorker' in navigator) {
+  // Отключаем все зарегистрированные service workers
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     registrations.forEach((registration) => {
-      registration.unregister();
+      registration.unregister().catch(() => {
+        // Игнорируем ошибки при отключении
+      });
     });
   });
+  
+  // Блокируем регистрацию новых service workers
+  const originalRegister = navigator.serviceWorker.register;
+  navigator.serviceWorker.register = function(...args) {
+    console.log('[Main] Service worker registration blocked to prevent CORS issues');
+    return Promise.reject(new Error('Service worker registration disabled'));
+  };
 }
 
 // Реєстрація типів для TypeScript

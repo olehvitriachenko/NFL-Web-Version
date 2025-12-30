@@ -2,8 +2,9 @@ import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { writeFile, readFile } from 'fs/promises';
-import { existsSync } from 'fs';
+import { writeFile, readFile, rm } from 'fs/promises';
+import { existsSync, readdirSync } from 'fs';
+import axios from 'axios';
 import { SQLiteDatabase } from './database.js';
 import { RatesDatabase } from './rates-database.js';
 
@@ -158,6 +159,54 @@ ipcMain.handle('db:updateIllustrationPdfPath', async (_, id, pdfPath) => {
   } catch (error) {
     console.error('Error updating illustration PDF path:', error);
     return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('db:deleteIllustration', async (_, id) => {
+  try {
+    const deleted = database.deleteIllustration(id);
+    if (!deleted) {
+      return { success: false, error: 'Illustration not found' };
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting illustration:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('db:deleteIllustrationByQuoteId', async (_, quoteId) => {
+  try {
+    const deleted = database.deleteIllustrationByQuoteId(quoteId);
+    return { success: true, deleted: deleted };
+  } catch (error) {
+    console.error('Error deleting illustration by quoteId:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// IPC handlers for generic database operations (for quotes)
+ipcMain.handle('db:execute', async (_, sql: string, params: any[] = []) => {
+  try {
+    const result = database.execute(sql, params);
+    return { 
+      success: true, 
+      insertId: result.insertId, 
+      rowsAffected: result.rowsAffected 
+    };
+  } catch (error) {
+    console.error('Error executing SQL:', error);
+    return { success: false, error: String(error), insertId: 0, rowsAffected: 0 };
+  }
+});
+
+ipcMain.handle('db:query', async (_, sql: string, params: any[] = []) => {
+  try {
+    const result = database.executeQuery(sql, params);
+    return { success: true, rows: result.rows };
+  } catch (error) {
+    console.error('Error querying SQL:', error);
+    return { success: false, error: String(error), rows: [] };
   }
 });
 
@@ -562,4 +611,292 @@ ipcMain.handle('app:getUserDataPath', async () => {
   }
 });
 console.log('[Main] app:getUserDataPath handler registered successfully');
+
+// IPC handler for getting app directory path (where PDFs should be saved)
+ipcMain.handle('app:getAppPath', async () => {
+  console.log('[Main] app:getAppPath handler called');
+  try {
+    const appPath = app.getAppPath();
+    console.log('[Main] App path:', appPath);
+    return { success: true, data: appPath };
+  } catch (error) {
+    console.error('[Main] Error getting app path:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// IPC handler for getting PDFs directory path (inside app directory)
+ipcMain.handle('app:getPdfsPath', async () => {
+  console.log('[Main] app:getPdfsPath handler called');
+  try {
+    // Use userData for PDFs (standard location for app data)
+    // This works in both development and production
+    const userDataPath = app.getPath('userData');
+    const pdfsPath = path.join(userDataPath, 'pdfs');
+    
+    // Ensure directory exists
+    const fs = await import('fs');
+    if (!fs.existsSync(pdfsPath)) {
+      await fs.promises.mkdir(pdfsPath, { recursive: true });
+      console.log('[Main] Created PDFs directory:', pdfsPath);
+    }
+    
+    console.log('[Main] PDFs path:', pdfsPath);
+    return { success: true, data: pdfsPath };
+  } catch (error) {
+    console.error('[Main] Error getting PDFs path:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// IPC handler for resetting quotes and PDFs database (dev mode only)
+ipcMain.handle('db:resetQuotesAndPDFs', async () => {
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  
+  if (!isDev) {
+    return { success: false, error: 'This operation is only available in development mode' };
+  }
+
+  try {
+    // Reset database tables
+    const result = database.resetQuotesAndPDFs();
+    
+    // Delete all PDF files from the PDFs directory
+    const userDataPath = app.getPath('userData');
+    const pdfsPath = path.join(userDataPath, 'pdfs');
+    
+    let deletedFilesCount = 0;
+    if (existsSync(pdfsPath)) {
+      try {
+        const files = readdirSync(pdfsPath);
+        for (const file of files) {
+          if (file.endsWith('.pdf')) {
+            const filePath = path.join(pdfsPath, file);
+            await rm(filePath, { force: true });
+            deletedFilesCount++;
+          }
+        }
+      } catch (error) {
+        console.warn('Error deleting PDF files:', error);
+      }
+    }
+    
+    return {
+      success: true,
+      deletedCounts: result.deletedCounts,
+      deletedFilesCount,
+    };
+  } catch (error) {
+    console.error('Error resetting quotes and PDFs:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// IPC handlers for rates database version and updates
+ipcMain.handle('rates:getDatabaseVersion', async (_, accessToken?: string) => {
+  try {
+    const BASE_URL = process.env.VITE_BACKEND_API_URL || 'https://nfl-api.test.emorydevelopment.com';
+    const url = `${BASE_URL}/api/version/rate/latest/`;
+    
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    
+    const response = await axios.get(url, { headers });
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    console.error('Error getting database version:', error);
+    return { 
+      success: false, 
+      error: error?.response?.data?.message || error?.message || 'Unknown error',
+      data: null 
+    };
+  }
+});
+
+ipcMain.handle('rates:downloadDatabase', async (_, accessToken?: string) => {
+  try {
+    const BASE_URL = process.env.VITE_BACKEND_API_URL || 'https://nfl-api.test.emorydevelopment.com';
+    const url = `${BASE_URL}/api/version/rate/file/`;
+    
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    
+    // Скачиваем файл как buffer
+    const response = await axios.get(url, {
+      headers,
+      responseType: 'arraybuffer',
+    });
+    
+    // Сохраняем во временный файл
+    const userDataPath = app.getPath('userData');
+    const tempPath = path.join(userDataPath, 'rates_temp.sqlite');
+    
+    await writeFile(tempPath, Buffer.from(response.data));
+    
+    // Проверяем размер файла
+    const fsPromises = await import('fs/promises');
+    const fileStats = await fsPromises.stat(tempPath);
+    if (fileStats.size === 0) {
+      await rm(tempPath, { force: true });
+      throw new Error('Downloaded database file is empty');
+    }
+    
+    return { success: true, data: tempPath };
+  } catch (error: any) {
+    console.error('Error downloading database:', error);
+    return { 
+      success: false, 
+      error: error?.response?.data?.message || error?.message || 'Unknown error',
+      data: null 
+    };
+  }
+});
+
+ipcMain.handle('rates:updateDatabase', async (_, accessToken?: string) => {
+  try {
+    console.log('[Main] 🔄 Starting rates database update...');
+    console.log('[Main] 🎫 Access token provided:', !!accessToken);
+    
+    // 1. Скачиваем новую БД
+    const BASE_URL = process.env.VITE_BACKEND_API_URL || 'https://nfl-api.test.emorydevelopment.com';
+    const url = `${BASE_URL}/api/version/rate/file/`;
+    console.log('[Main] 📥 Download URL:', url);
+    
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+      console.log('[Main] 🔐 Authorization header added');
+    } else {
+      console.warn('[Main] ⚠️ No access token provided');
+    }
+    
+    console.log('[Main] 🌐 Downloading database file...');
+    const response = await axios.get(url, {
+      headers,
+      responseType: 'arraybuffer',
+      timeout: 300000, // 5 минут таймаут
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    });
+    console.log('[Main] ✅ Download completed, status:', response.status);
+    console.log('[Main] 📊 Downloaded size:', response.data.byteLength, 'bytes');
+    
+    const userDataPath = app.getPath('userData');
+    const tempPath = path.join(userDataPath, 'rates_temp.sqlite');
+    console.log('[Main] 💾 Saving to temp path:', tempPath);
+    
+    await writeFile(tempPath, Buffer.from(response.data));
+    console.log('[Main] ✅ File saved to temp path');
+    
+    // Проверяем размер файла
+    const fsPromises = await import('fs/promises');
+    const fileStats = await fsPromises.stat(tempPath);
+    console.log('[Main] 📏 Temp file size:', fileStats.size, 'bytes');
+    if (fileStats.size === 0) {
+      console.error('[Main] ❌ Downloaded file is empty!');
+      await rm(tempPath, { force: true });
+      throw new Error('Downloaded database file is empty');
+    }
+    
+    const downloadedPath = tempPath;
+    console.log('[Main] ✅ File downloaded and validated');
+    
+    // 2. Закрываем базу данных перед заменой
+    console.log('[Main] 🔒 Closing database before replacement...');
+    try {
+      ratesDatabase.close();
+      console.log('[Main] ✅ Database closed');
+    } catch (closeError) {
+      console.warn('[Main] ⚠️ Error closing database (continuing anyway):', closeError);
+    }
+    
+    // 3. Заменяем БД
+    try {
+      console.log('[Main] 🔄 Replacing database...');
+      await ratesDatabase.replaceDatabase(downloadedPath);
+      console.log('[Main] ✅ Database replaced successfully');
+      
+      // 4. Очищаем временный файл
+      console.log('[Main] 🗑️ Cleaning up temp file...');
+      await rm(downloadedPath, { force: true });
+      console.log('[Main] ✅ Temp file removed');
+      
+      // 5. Очищаем старые backup'ы
+      console.log('[Main] 🧹 Cleaning up old backups...');
+      await ratesDatabase.cleanupOldBackups();
+      console.log('[Main] ✅ Old backups cleaned');
+      
+      // 6. Получаем версию новой БД
+      console.log('[Main] 📋 Getting new database version...');
+      const versionUrl = `${BASE_URL}/api/version/rate/latest/`;
+      const versionResponse = await axios.get(versionUrl, { headers });
+      const newVersion = versionResponse.data?.rateDbVersion || null;
+      console.log('[Main] 📦 New database version:', newVersion);
+      
+      console.log('[Main] ✅ Rates database updated successfully');
+      return { 
+        success: true, 
+        version: newVersion,
+        message: 'Database updated successfully'
+      };
+    } catch (error: any) {
+      // Если замена не удалась, пробуем восстановить из backup
+      console.error('[Main] ❌ Error replacing database:', error);
+      console.error('[Main] Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+      });
+      console.log('[Main] 🔄 Attempting restore from backup...');
+      
+      try {
+        const restored = await ratesDatabase.restoreFromBackup();
+        if (restored) {
+          console.log('[Main] ✅ Database restored from backup');
+          return { 
+            success: false, 
+            error: 'Failed to update database, restored from backup',
+            restored: true 
+          };
+        } else {
+          console.error('[Main] ❌ Failed to restore from backup');
+        }
+      } catch (restoreError: any) {
+        console.error('[Main] ❌ Error restoring from backup:', restoreError);
+        console.error('[Main] Restore error details:', {
+          message: restoreError?.message,
+          stack: restoreError?.stack,
+        });
+      }
+      
+      // Очищаем временный файл даже при ошибке
+      try {
+        console.log('[Main] 🗑️ Cleaning up temp file after error...');
+        await rm(downloadedPath, { force: true });
+        console.log('[Main] ✅ Temp file removed');
+      } catch (rmError) {
+        console.warn('[Main] ⚠️ Error removing temp file:', rmError);
+        // Игнорируем ошибки удаления
+      }
+      
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('[Main] ❌ Exception in updateDatabase handler:', error);
+    console.error('[Main] Exception details:', {
+      message: error?.message,
+      stack: error?.stack,
+      response: error?.response?.data,
+      status: error?.response?.status,
+    });
+    return { 
+      success: false, 
+      error: error?.message || 'Unknown error',
+      message: 'Failed to update database'
+    };
+  }
+});
 

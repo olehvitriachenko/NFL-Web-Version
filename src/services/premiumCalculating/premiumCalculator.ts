@@ -88,7 +88,7 @@ export async function calculatePremium(
 
   if (!rate) {
     throw new Error(
-      `No rate found for ${policy.productType}, age ${policy.age}, ` +
+      `No rate found for control code ${controlCode}, age ${policy.age}, ` +
       `gender ${policy.gender}, smoking status ${policy.smokingStatus}`
     );
   }

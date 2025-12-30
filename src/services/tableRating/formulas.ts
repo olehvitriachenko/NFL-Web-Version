@@ -70,7 +70,7 @@ export const getTablePremium = async (
 
   if (!rate) {
     throw new Error(
-      `No rate found for ${policyInfo.productType}, age ${policyInfo.age}, ` +
+      `No rate found for control code ${controlCode}, age ${policyInfo.age}, ` +
       `gender ${policyInfo.gender}, smoking status ${policyInfo.smokingStatus}`
     );
   }

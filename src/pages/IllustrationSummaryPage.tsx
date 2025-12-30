@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { navigateBack } from "../utils/navigation";
 import { BORDER } from "../constants/theme";
@@ -322,7 +321,6 @@ export const IllustrationSummaryPage = () => {
   if (loading || !illustrationData) {
     return (
       <div className="min-h-screen bg-[#f5f5f7]">
-        <OfflineIndicator />
         <PageHeader
           title="Illustration Summary"
           onBack={handleBack}
@@ -339,7 +337,6 @@ export const IllustrationSummaryPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <OfflineIndicator />
       <PageHeader
         title="Illustration Summary"
         onBack={handleBack}

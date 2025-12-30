@@ -16,6 +16,7 @@ import { Route as QuoteDetailsRouteImport } from './routes/quote-details'
 import { Route as QuickQuoteRouteImport } from './routes/quick-quote'
 import { Route as PdfViewerRouteImport } from './routes/pdf-viewer'
 import { Route as PayorInformationRouteImport } from './routes/payor-information'
+import { Route as OauthCallbackRouteImport } from './routes/oauth-callback'
 import { Route as IllustrationSummaryRouteImport } from './routes/illustration-summary'
 import { Route as IllustrationHistoryRouteImport } from './routes/illustration-history'
 import { Route as HomeRouteImport } from './routes/home'
@@ -59,6 +60,11 @@ const PdfViewerRoute = PdfViewerRouteImport.update({
 const PayorInformationRoute = PayorInformationRouteImport.update({
   id: '/payor-information',
   path: '/payor-information',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthCallbackRoute = OauthCallbackRouteImport.update({
+  id: '/oauth-callback',
+  path: '/oauth-callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IllustrationSummaryRoute = IllustrationSummaryRouteImport.update({
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
+  '/oauth-callback': typeof OauthCallbackRoute
   '/payor-information': typeof PayorInformationRoute
   '/pdf-viewer': typeof PdfViewerRoute
   '/quick-quote': typeof QuickQuoteRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
+  '/oauth-callback': typeof OauthCallbackRoute
   '/payor-information': typeof PayorInformationRoute
   '/pdf-viewer': typeof PdfViewerRoute
   '/quick-quote': typeof QuickQuoteRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
   '/illustration-summary': typeof IllustrationSummaryRoute
+  '/oauth-callback': typeof OauthCallbackRoute
   '/payor-information': typeof PayorInformationRoute
   '/pdf-viewer': typeof PdfViewerRoute
   '/quick-quote': typeof QuickQuoteRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/illustration-history'
     | '/illustration-summary'
+    | '/oauth-callback'
     | '/payor-information'
     | '/pdf-viewer'
     | '/quick-quote'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/illustration-history'
     | '/illustration-summary'
+    | '/oauth-callback'
     | '/payor-information'
     | '/pdf-viewer'
     | '/quick-quote'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/illustration-history'
     | '/illustration-summary'
+    | '/oauth-callback'
     | '/payor-information'
     | '/pdf-viewer'
     | '/quick-quote'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   IllustrationHistoryRoute: typeof IllustrationHistoryRoute
   IllustrationSummaryRoute: typeof IllustrationSummaryRoute
+  OauthCallbackRoute: typeof OauthCallbackRoute
   PayorInformationRoute: typeof PayorInformationRoute
   PdfViewerRoute: typeof PdfViewerRoute
   QuickQuoteRoute: typeof QuickQuoteRoute
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       path: '/payor-information'
       fullPath: '/payor-information'
       preLoaderRoute: typeof PayorInformationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth-callback': {
+      id: '/oauth-callback'
+      path: '/oauth-callback'
+      fullPath: '/oauth-callback'
+      preLoaderRoute: typeof OauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/illustration-summary': {
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   IllustrationHistoryRoute: IllustrationHistoryRoute,
   IllustrationSummaryRoute: IllustrationSummaryRoute,
+  OauthCallbackRoute: OauthCallbackRoute,
   PayorInformationRoute: PayorInformationRoute,
   PdfViewerRoute: PdfViewerRoute,
   QuickQuoteRoute: QuickQuoteRoute,

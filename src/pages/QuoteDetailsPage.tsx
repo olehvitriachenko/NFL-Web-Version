@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { navigateBack } from "../utils/navigation";
 import { BORDER } from "../constants/theme";
@@ -144,7 +143,6 @@ export const QuoteDetailsPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <OfflineIndicator />
       <PageHeader
         title="Quote Details"
         onBack={handleBack}

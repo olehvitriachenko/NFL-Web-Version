@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
-import { OfflineIndicator } from '../components/OfflineIndicator';
 import { PDFViewer } from '../components/PDFViewer';
 import { navigateBack } from '../utils/navigation';
 
@@ -28,9 +27,22 @@ export const PDFViewerPage = () => {
       setError(null);
       console.log('[PDFViewerPage] Loading PDF file:', filePath);
       
-      // Просто використовуємо шлях до файлу для iframe
-      // В Electron iframe може відкрити file:// URL напряму
-      setPdfFile(filePath);
+      // Decode the file path if it's URL encoded
+      const decodedPath = decodeURIComponent(filePath);
+      console.log('[PDFViewerPage] Decoded file path:', decodedPath);
+      
+      // Check if file exists (in Electron)
+      const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
+      if (isElectron && window.electron?.pdf) {
+        const existsResult = await window.electron.pdf.fileExists(decodedPath);
+        if (!existsResult.success || !existsResult.data) {
+          setError(`PDF file not found: ${decodedPath}`);
+          return;
+        }
+      }
+      
+      // Use the decoded file path
+      setPdfFile(decodedPath);
     } catch (err) {
       console.error('[PDFViewerPage] Error loading PDF file:', err);
       setError(`Failed to load PDF: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -47,7 +59,6 @@ export const PDFViewerPage = () => {
 
   return (
     <div className="bg-[#f5f5f7] flex flex-col" style={{ height: '100vh', overflow: 'hidden' }}>
-      <OfflineIndicator />
       <PageHeader title="PDF Viewer" onBack={handleBack} onHome={handleHome} />
       
       <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 80px)', minHeight: 0 }}>

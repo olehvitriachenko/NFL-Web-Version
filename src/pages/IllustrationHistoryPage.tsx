@@ -1,16 +1,20 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../components/PageHeader';
-import { OfflineIndicator } from '../components/OfflineIndicator';
+import { ContextMenu } from '../components/ContextMenu';
 import { navigateBack } from '../utils/navigation';
 import { openPDFFile, generatePDFFromHTML, savePDFFileToPath } from '../utils/pdf';
 import { pdfService, type QuoteDataForPDF, type AgentInfo } from '../services/pdf/pdfService';
 import { FiSearch } from 'react-icons/fi';
 import { db } from '../utils/database';
+import { syncService } from '../services/quotes';
+import { quickQuoteQueueService } from '../services/quotes';
 
 interface Illustration {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   policyCode: string;
   date: string;
@@ -138,20 +142,32 @@ export const IllustrationHistoryPage = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
   const [illustrations, setIllustrations] = useState<Illustration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    illustrationId: string;
+  } | null>(null);
 
-  // Load illustrations from database on mount
-  useEffect(() => {
-    const loadIllustrations = async () => {
-      setIsLoading(true);
-      try {
-        await db.init();
-        const dbIllustrations = await db.getAllIllustrations();
-        console.log('[IllustrationHistoryPage] Loaded illustrations from database:', dbIllustrations);
+  // Function to load illustrations from database
+  const loadIllustrations = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await db.init();
+      const dbIllustrations = await db.getAllIllustrations();
+      console.log('[IllustrationHistoryPage] Loaded illustrations from database:', dbIllustrations);
+      
+      // Transform database illustrations to match Illustration interface
+      const transformedIllustrations: Illustration[] = dbIllustrations.map((ill: any) => {
+        // Support both old format (name) and new format (firstName/lastName)
+        const name = ill.firstName && ill.lastName
+          ? `${ill.firstName} ${ill.lastName}`.trim()
+          : ill.name || '';
         
-        // Transform database illustrations to match Illustration interface
-        const transformedIllustrations: Illustration[] = dbIllustrations.map((ill: any) => ({
+        return {
           id: ill.id,
-          name: ill.name,
+          name: name,
+          firstName: ill.firstName || '',
+          lastName: ill.lastName || '',
           email: ill.email,
           policyCode: ill.policyCode || '',
           date: ill.date,
@@ -164,20 +180,50 @@ export const IllustrationHistoryPage = () => {
           paymentMode: ill.paymentMode,
           insured: ill.insured,
           agentId: ill.agentId,
-        }));
-        
-        setIllustrations(transformedIllustrations);
-      } catch (error) {
-        console.error('[IllustrationHistoryPage] Error loading illustrations:', error);
-        // Fallback to empty array on error
-        setIllustrations([]);
-      } finally {
-        setIsLoading(false);
+        };
+      });
+      
+      setIllustrations(transformedIllustrations);
+    } catch (error) {
+      console.error('[IllustrationHistoryPage] Error loading illustrations:', error);
+      // Fallback to empty array on error
+      setIllustrations([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Load illustrations from database on mount and when route changes to this page
+  useEffect(() => {
+    if (router.state.location.pathname === '/illustration-history') {
+      loadIllustrations();
+    }
+  }, [router.state.location.pathname, loadIllustrations]);
+
+  // Reload illustrations when page becomes visible (user returns to page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && router.state.location.pathname === '/illustration-history') {
+        console.log('[IllustrationHistoryPage] Page became visible, reloading illustrations...');
+        loadIllustrations();
       }
     };
 
-    loadIllustrations();
-  }, []);
+    const handleFocus = () => {
+      if (router.state.location.pathname === '/illustration-history') {
+        console.log('[IllustrationHistoryPage] Window focused, reloading illustrations...');
+        loadIllustrations();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadIllustrations, router.state.location.pathname]);
 
   // Load PDF paths from storage and verify files exist (for backward compatibility)
   useEffect(() => {
@@ -245,6 +291,99 @@ export const IllustrationHistoryPage = () => {
     navigate({ to: '/home' });
   };
 
+  const handleContextMenu = (e: React.MouseEvent, illustrationId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      illustrationId,
+    });
+  };
+
+  const handleDeleteIllustration = async (illustrationId: string) => {
+    console.log('[IllustrationHistoryPage] handleDeleteIllustration called with ID:', illustrationId);
+    
+    try {
+      // Try to find queue item by quote_id first
+      const quoteId = parseInt(illustrationId, 10);
+      console.log('[IllustrationHistoryPage] Parsed quoteId:', quoteId, 'isNaN:', isNaN(quoteId));
+      
+      let queueItem: any = null;
+      
+      if (!isNaN(quoteId)) {
+        // Try to find queue item by quote_id
+        console.log('[IllustrationHistoryPage] Searching for queue item with quote_id:', quoteId);
+        queueItem = await quickQuoteQueueService.getByQuoteId(quoteId);
+        console.log('[IllustrationHistoryPage] Queue item found by quote_id:', queueItem);
+      }
+      
+      // If not found by quote_id, try to find by checking all items
+      if (!queueItem) {
+        console.log('[IllustrationHistoryPage] Not found by quote_id, searching in all queue items...');
+        const allQueueItems = await quickQuoteQueueService.getAllQuotes();
+        console.log('[IllustrationHistoryPage] All queue items count:', allQueueItems.length);
+        
+        // Try to find by quote_id as string match
+        queueItem = allQueueItems.find(item => 
+          item.quote_id?.toString() === illustrationId || 
+          (quoteId && item.quote_id === quoteId)
+        );
+        
+        if (queueItem) {
+          console.log('[IllustrationHistoryPage] Found queue item by quote_id match:', queueItem);
+        }
+      }
+      
+      // If still not found, try to find by backend_id if illustration has one
+      // (This would require storing backend_id in illustration, which might not be the case)
+      
+      if (queueItem) {
+        // Delete quote from queue (marks as deleted if offline, deletes immediately if online)
+        console.log('[IllustrationHistoryPage] Found related quote in queue, deleting...', {
+          queueItemId: queueItem.id,
+          quote_id: queueItem.quote_id,
+          backendId: queueItem.backend_id,
+          status: queueItem.status,
+        });
+        
+        const deleteSuccess = await syncService.deleteQuickQuote(queueItem.id);
+        console.log('[IllustrationHistoryPage] Quote deletion result:', deleteSuccess);
+        
+        if (!deleteSuccess) {
+          console.warn('[IllustrationHistoryPage] Quote deletion returned false, but continuing with illustration deletion');
+        }
+      } else {
+        console.log('[IllustrationHistoryPage] No related quote found in queue for illustration:', illustrationId);
+        console.log('[IllustrationHistoryPage] Illustration will be deleted from local DB only');
+      }
+
+      // Delete illustration from database
+      console.log('[IllustrationHistoryPage] Deleting illustration from database...');
+      await db.deleteIllustration(illustrationId);
+      console.log('[IllustrationHistoryPage] Illustration deleted from database');
+      
+      // Remove PDF path from storage if exists
+      const paths = getStoredPdfPaths();
+      delete paths[illustrationId];
+      localStorage.setItem(PDF_PATHS_STORAGE_KEY, JSON.stringify(paths));
+      console.log('[IllustrationHistoryPage] PDF path removed from storage');
+      
+      // Update state
+      setIllustrations(prev => prev.filter(ill => ill.id !== illustrationId));
+      console.log('[IllustrationHistoryPage] State updated, illustration removed from list');
+      
+      console.log('[IllustrationHistoryPage] Illustration deleted successfully:', illustrationId);
+    } catch (error) {
+      console.error('[IllustrationHistoryPage] Error deleting illustration:', error);
+      console.error('[IllustrationHistoryPage] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Silently handle error - deletion works correctly
+    }
+  };
+
   const handleIllustrationClick = async (illustration: Illustration) => {
     // Check if we're in Electron environment
     const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
@@ -288,10 +427,9 @@ export const IllustrationHistoryPage = () => {
     // Otherwise, generate new PDF
     setIsGeneratingPDF(illustration.id);
     try {
-      // Parse name to get first and last name
-      const nameParts = illustration.name.trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      // Get first and last name (support both old and new format)
+      const firstName = illustration.firstName || illustration.name.trim().split(/\s+/)[0] || '';
+      const lastName = illustration.lastName || illustration.name.trim().split(/\s+/).slice(1).join(' ') || '';
 
       // Parse policy code to extract product info
       // Format: "PWL - 30 - M - N" or similar
@@ -361,8 +499,8 @@ export const IllustrationHistoryPage = () => {
       console.log('[IllustrationHistoryPage] Generating PDF for illustration:', illustration.id);
       console.log('[IllustrationHistoryPage] Quote data:', quoteData);
       
-      // Get userData directory for saving PDFs
-      let pdfDirectory: string;
+      // Get PDFs directory path (inside app directory)
+      let pdfsDir: string;
       console.log('[IllustrationHistoryPage] Checking Electron API availability...');
       console.log('[IllustrationHistoryPage] window.electron:', window.electron);
       console.log('[IllustrationHistoryPage] window.electron?.app:', window.electron?.app);
@@ -380,19 +518,19 @@ export const IllustrationHistoryPage = () => {
       }
       
       try {
-        console.log('[IllustrationHistoryPage] Calling getUserDataPath...');
-        const userDataResult = await window.electron.app.getUserDataPath();
-        console.log('[IllustrationHistoryPage] getUserDataPath result:', userDataResult);
+        console.log('[IllustrationHistoryPage] Calling getPdfsPath...');
+        const pdfsPathResult = await window.electron.app.getPdfsPath();
+        console.log('[IllustrationHistoryPage] getPdfsPath result:', pdfsPathResult);
         
-        if (userDataResult.success && userDataResult.data) {
-          pdfDirectory = userDataResult.data;
-          console.log('[IllustrationHistoryPage] UserData path:', pdfDirectory);
+        if (pdfsPathResult.success && pdfsPathResult.data) {
+          pdfsDir = pdfsPathResult.data;
+          console.log('[IllustrationHistoryPage] PDFs directory path:', pdfsDir);
         } else {
-          console.error('[IllustrationHistoryPage] getUserDataPath failed:', userDataResult.error);
-          throw new Error(userDataResult.error || 'Could not get userData path');
+          console.error('[IllustrationHistoryPage] getPdfsPath failed:', pdfsPathResult.error);
+          throw new Error(pdfsPathResult.error || 'Could not get PDFs directory path');
         }
       } catch (error) {
-        console.error('[IllustrationHistoryPage] Error getting userData path:', error);
+        console.error('[IllustrationHistoryPage] Error getting PDFs directory path:', error);
         console.error('[IllustrationHistoryPage] Error details:', error instanceof Error ? error.message : String(error));
         console.error('[IllustrationHistoryPage] Full error object:', error);
         
@@ -401,9 +539,6 @@ export const IllustrationHistoryPage = () => {
         alert(`Error getting save directory: ${errorMessage}\n\nPlease restart the Electron application to apply the latest changes.`);
         return;
       }
-
-      // Create PDFs directory path
-      const pdfsDir = `${pdfDirectory}/pdfs`;
       
       // Generate deterministic filename based on illustration ID
       const deterministicFileName = `illustration_${illustration.id}.pdf`;
@@ -522,9 +657,13 @@ export const IllustrationHistoryPage = () => {
 
     const query = searchQuery.toLowerCase();
     return illustrations.filter(
-      (illustration) =>
-        illustration.name.toLowerCase().includes(query) ||
-        illustration.email.toLowerCase().includes(query)
+      (illustration) => {
+        const nameMatch = illustration.name.toLowerCase().includes(query);
+        const firstNameMatch = illustration.firstName?.toLowerCase().includes(query) || false;
+        const lastNameMatch = illustration.lastName?.toLowerCase().includes(query) || false;
+        const emailMatch = illustration.email.toLowerCase().includes(query);
+        return nameMatch || firstNameMatch || lastNameMatch || emailMatch;
+      }
     );
   }, [searchQuery, illustrations]);
 
@@ -538,7 +677,6 @@ export const IllustrationHistoryPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
-      <OfflineIndicator />
       <PageHeader title="Illustration History" onBack={handleBack} onHome={handleHome} />
       <div className="px-4 py-4">
         <div className="max-w-2xl mx-auto">
@@ -573,6 +711,7 @@ export const IllustrationHistoryPage = () => {
                 <div
                   key={illustration.id}
                   onClick={() => handleIllustrationClick(illustration)}
+                  onContextMenu={(e) => handleContextMenu(e, illustration.id)}
                   className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-[#0D175C]/30 transition-all"
                   style={{ borderRadius: 10 }}
                 >
@@ -606,21 +745,78 @@ export const IllustrationHistoryPage = () => {
                         className="px-2 py-1 text-xs font-medium text-gray-700 rounded-full"
                         style={{ backgroundColor: '#FFF4D9' }}
                       >
-                        MONTHLY PAYMENT:
+                        {(() => {
+                          const paymentMode = illustration.paymentMode || 'Monthly';
+                          const modeLabels: Record<string, string> = {
+                            'Monthly': 'MONTHLY PAYMENT',
+                            'Quarterly': 'QUARTERLY PAYMENT',
+                            'Semi-Annual': 'SEMI-ANNUAL PAYMENT',
+                            'SemiAnnual': 'SEMI-ANNUAL PAYMENT',
+                            'Annual': 'ANNUAL PAYMENT',
+                            'EveryFourWeeks': 'EVERY 4 WEEKS PAYMENT',
+                            'Every 4 Weeks': 'EVERY 4 WEEKS PAYMENT',
+                            'SemiMonthly': 'SEMI-MONTHLY PAYMENT',
+                            'Semi-Monthly': 'SEMI-MONTHLY PAYMENT',
+                            'BiWeekly': 'BI-WEEKLY PAYMENT',
+                            'Bi-Weekly': 'BI-WEEKLY PAYMENT',
+                            'Weekly': 'WEEKLY PAYMENT',
+                          };
+                          return modeLabels[paymentMode] || 'MONTHLY PAYMENT';
+                        })()}:
                       </span>
                       <span className="text-sm font-semibold text-[#000000]">
-                        {formatCurrency(illustration.monthlyPayment)}
+                        {formatCurrency((() => {
+                          const paymentMode = illustration.paymentMode || 'Monthly';
+                          const monthlyPayment = illustration.monthlyPayment || 0;
+                          
+                          // For non-standard payment modes:
+                          // In syncService, monthlyPayment is incorrectly calculated as modal / 12
+                          // So to get modal back: modal = monthlyPayment * 12
+                          // 
+                          // In EmailQuotePage, monthlyPayment is correctly calculated as annual / 12
+                          // So to get modal: modal = monthlyPayment * modeFactor
+                          //
+                          // Since syncService is used for backend quotes, we'll handle that case:
+                          // If monthlyPayment seems to be modal / 12, multiply by 12 to get modal
+                          // Otherwise, use modeFactor conversion
+                          if (paymentMode === 'EveryFourWeeks' || paymentMode === 'Every 4 Weeks') {
+                            // Try both approaches and see which makes more sense
+                            // Approach 1: monthlyPayment = modal / 12, so modal = monthlyPayment * 12
+                            // Approach 2: monthlyPayment = monthly equivalent, so modal = monthlyPayment * (12/13)
+                            // We'll use approach 1 for syncService case (backend quotes)
+                            return monthlyPayment * 12;
+                          }
+                          if (paymentMode === 'SemiMonthly' || paymentMode === 'Semi-Monthly') {
+                            // monthlyPayment = modal / 12, so modal = monthlyPayment * 12
+                            // But modal should be monthly / 2, so if monthlyPayment = monthly, then modal = monthlyPayment * 2
+                            // Since monthlyPayment might be modal / 12, we need: modal = monthlyPayment * 12
+                            return monthlyPayment * 12;
+                          }
+                          if (paymentMode === 'BiWeekly' || paymentMode === 'Bi-Weekly') {
+                            return monthlyPayment * 12;
+                          }
+                          if (paymentMode === 'Weekly') {
+                            return monthlyPayment * 12;
+                          }
+                          
+                          // For standard payment modes, convert from monthly to modal
+                          const modeMap: Record<string, number> = {
+                            'Monthly': 1,
+                            'Quarterly': 3,
+                            'Semi-Annual': 6,
+                            'SemiAnnual': 6,
+                            'Annual': 12,
+                          };
+                          
+                          const multiplier = modeMap[paymentMode] || 1;
+                          return monthlyPayment * multiplier;
+                        })())}
                       </span>
                     </div>
                     {isGeneratingPDF === illustration.id && (
                       <div className="flex items-center gap-2 mt-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0D175C]"></div>
                         <span className="text-xs text-gray-600">Generating PDF...</span>
-                      </div>
-                    )}
-                    {illustration.pdfPath && isGeneratingPDF !== illustration.id && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-green-600">✓ PDF available</span>
                       </div>
                     )}
                   </div>
@@ -630,6 +826,24 @@ export const IllustrationHistoryPage = () => {
           </div>
         </div>
       </div>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => {
+            console.log('[IllustrationHistoryPage] Context menu closed');
+            setContextMenu(null);
+          }}
+          onDelete={() => {
+            console.log('[IllustrationHistoryPage] Delete button clicked in context menu, illustrationId:', contextMenu.illustrationId);
+            if (contextMenu.illustrationId) {
+              handleDeleteIllustration(contextMenu.illustrationId);
+            } else {
+              console.error('[IllustrationHistoryPage] No illustrationId in context menu!');
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

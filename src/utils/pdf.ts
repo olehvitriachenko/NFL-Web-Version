@@ -64,14 +64,13 @@ export async function savePDFFile(
   }
 
   try {
-    // Get userData path
-    const userDataResult = await window.electron!.app.getUserDataPath();
-    if (!userDataResult.success || !userDataResult.data) {
-      throw new Error('Could not get userData path');
+    // Get PDFs directory path (inside app directory)
+    const pdfsPathResult = await window.electron!.app.getPdfsPath();
+    if (!pdfsPathResult.success || !pdfsPathResult.data) {
+      throw new Error('Could not get PDFs directory path');
     }
 
-    const userDataPath = userDataResult.data;
-    const pdfsDir = `${userDataPath}/pdfs`;
+    const pdfsDir = pdfsPathResult.data;
     const fileName = defaultFileName || `document_${Date.now()}.pdf`;
     const filePath = `${pdfsDir}/${fileName}`;
 

@@ -155,6 +155,44 @@ class IndexedDBStorage {
       getRequest.onerror = () => reject(getRequest.error);
     });
   }
+
+  async deleteIllustration(id: string): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.illustrationsStoreName], "readwrite");
+      const store = transaction.objectStore(this.illustrationsStoreName);
+      const request = store.delete(id);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async deleteIllustrationByQuoteId(quoteId: string | number): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.illustrationsStoreName], "readwrite");
+      const store = transaction.objectStore(this.illustrationsStoreName);
+      const request = store.openCursor();
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const illustration = cursor.value;
+          if (illustration.quoteId === String(quoteId)) {
+            cursor.delete();
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
 }
 
 // SQLite wrapper for Electron (via IPC)
@@ -255,6 +293,28 @@ class SQLiteStorage {
       throw new Error(result.error || "Failed to update illustration PDF path");
     }
   }
+
+  async deleteIllustration(id: string): Promise<void> {
+    if (!window.electron?.db) {
+      throw new Error("Electron IPC not available");
+    }
+
+    const result = await window.electron.db.deleteIllustration(id);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to delete illustration");
+    }
+  }
+
+  async deleteIllustrationByQuoteId(quoteId: string | number): Promise<void> {
+    if (!window.electron?.db) {
+      throw new Error("Electron IPC not available");
+    }
+
+    const result = await window.electron.db.deleteIllustrationByQuoteId(quoteId);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to delete illustration by quoteId");
+    }
+  }
 }
 
 // Database interface
@@ -324,6 +384,22 @@ class Database {
       await (this.storage as SQLiteStorage).updateIllustrationPdfPath(id, pdfPath);
     } else {
       await (this.storage as IndexedDBStorage).updateIllustrationPdfPath(id, pdfPath);
+    }
+  }
+
+  async deleteIllustration(id: string): Promise<void> {
+    if (isElectron) {
+      await (this.storage as SQLiteStorage).deleteIllustration(id);
+    } else {
+      await (this.storage as IndexedDBStorage).deleteIllustration(id);
+    }
+  }
+
+  async deleteIllustrationByQuoteId(quoteId: string | number): Promise<void> {
+    if (isElectron) {
+      await (this.storage as SQLiteStorage).deleteIllustrationByQuoteId(quoteId);
+    } else {
+      await (this.storage as IndexedDBStorage).deleteIllustrationByQuoteId(quoteId);
     }
   }
 }

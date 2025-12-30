@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { OfflineIndicator } from "../components/OfflineIndicator";
 import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
 import { navigateBack } from "../utils/navigation";
@@ -84,7 +83,6 @@ export const ClientInformationPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <OfflineIndicator />
       <PageHeader title="Client Information" onBack={handleBack} onHome={handleHome} />
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6 py-6">
         <div className="w-full max-w-[600px]">

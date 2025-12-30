@@ -321,6 +321,9 @@ export function getWSPTermControlCode(
  */
 export function isTermProduct(productType: ProductType): boolean {
   return (
+    productType === ProductType.LegacyTerm10 ||
+    productType === ProductType.LegacyTerm20 ||
+    productType === ProductType.LegacyTerm30 ||
     productType === ProductType.SelectTerm10 ||
     productType === ProductType.SelectTerm15 ||
     productType === ProductType.SelectTerm20 ||
