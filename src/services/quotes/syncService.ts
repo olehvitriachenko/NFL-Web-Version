@@ -3,8 +3,9 @@
  * Service for synchronizing quotes with backend
  */
 
-import { pdfQueueService } from './pdfQueueService';
-import { quickQuoteQueueService, type QuickQuoteQueueItem } from './quickQuoteQueueService';
+import { pdfQueueService } from '../queues/pdfQueueService';
+import { quickQuoteQueueService } from './quickQuoteQueueService';
+import type { QuickQuoteQueueItem } from '../queues/types';
 import { quoteService } from './quoteService';
 import QuotesHttpService from './httpService';
 import { getApiBaseUrl } from '../../config/api';
@@ -705,15 +706,25 @@ class SyncService {
               companyLogoUri = '/aml_brand_logo.jpg';
             }
 
-            pdfPath = await pdfService.generatePdf({
-              quote: { ...quoteData, id: localQuoteId },
+            const generatedPdfPath = await pdfService.generatePdf({
+              quote: { 
+                ...quoteData, 
+                id: localQuoteId,
+                faceAmount: quoteData.faceAmount || 0,
+              },
               agent: agent || undefined,
-              recipientEmail: quickQuote.insuredEmail || 'unknown@example.com',
+              recipientEmail: quickQuote.insuredEmail ? quickQuote.insuredEmail : 'unknown@example.com',
               insuredFirstName: quickQuote.insuredFirstName || undefined,
               insuredLastName: quickQuote.insuredLastName || undefined,
               companyLogoUri: companyLogoUri,
               deterministicPath: deterministicFilePath,
             });
+            
+            if (!generatedPdfPath) {
+              throw new Error('Failed to generate PDF');
+            }
+            
+            pdfPath = generatedPdfPath;
             console.log(`[SyncService] Generated PDF for quote ${backendId}: ${pdfPath}`);
           } catch (error) {
             console.error(`[SyncService] Error generating PDF for quote ${backendId}:`, error);
@@ -769,9 +780,13 @@ class SyncService {
           // 7.9. Add to PDF queue and mark as sent
           const pdfQueueId = await pdfQueueService.addToQueueWithPath(
             {
-              quote: { ...quoteData, id: localQuoteId },
+              quote: { 
+                ...quoteData, 
+                id: localQuoteId,
+                faceAmount: quoteData.faceAmount || 0,
+              },
               agent: agent || undefined,
-              recipientEmail: quickQuote.insuredEmail || 'unknown@example.com',
+              recipientEmail: quickQuote.insuredEmail ? quickQuote.insuredEmail : 'unknown@example.com',
               insuredFirstName: quickQuote.insuredFirstName || undefined,
               insuredLastName: quickQuote.insuredLastName || undefined,
             },

@@ -1,5 +1,5 @@
 appId: com.nfl.webapp
-productName: NFL Web App
+productName: NationalFarmLife
 copyright: Copyright © 2024
 directories:
   output: release
@@ -26,7 +26,7 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: build/icon.ico
+  icon: build/icon.png  # Використовуємо PNG замість ICO через помилку формату
   requestedExecutionLevel: asInvoker
   artifactName: ${productName}-Setup-${version}.${ext}
   # Якщо іконка відсутня, electron-builder створить дефолтну

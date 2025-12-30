@@ -80,6 +80,31 @@ export interface ElectronAPI {
     getAppPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
     getPdfsPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
   };
+  pdfQueue?: {
+    add: (item: any) => Promise<{ success: boolean; id?: number; error?: string }>;
+    getAll: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getPending: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getFailed: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getByQuoteId: (quoteId: number) => Promise<{ success: boolean; data?: any; error?: string }>;
+    updateStatus: (id: number, status: string, errorMessage?: string) => Promise<{ success: boolean; error?: string }>;
+    incrementRetryCount: (id: number) => Promise<{ success: boolean; error?: string }>;
+    delete: (id: number) => Promise<{ success: boolean; error?: string }>;
+    deleteByQuoteId: (quoteId: number) => Promise<{ success: boolean; error?: string }>;
+  };
+  quickQuoteQueue?: {
+    add: (item: any) => Promise<{ success: boolean; id?: number; error?: string }>;
+    getAll: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getPending: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getFailed: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getWithBackendId: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getWithoutBackendId: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getByQuoteId: (quoteId: number) => Promise<{ success: boolean; data?: any; error?: string }>;
+    updateStatus: (id: number, status: string, errorMessage?: string) => Promise<{ success: boolean; error?: string }>;
+    incrementRetryCount: (id: number) => Promise<{ success: boolean; error?: string }>;
+    updateBackendId: (id: number, backendId: number) => Promise<{ success: boolean; error?: string }>;
+    delete: (id: number) => Promise<{ success: boolean; error?: string }>;
+    deleteByQuoteId: (quoteId: number) => Promise<{ success: boolean; error?: string }>;
+  };
 }
 
 declare global {

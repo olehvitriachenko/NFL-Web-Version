@@ -1,7 +1,7 @@
 {
   "name": "nfl-web-electron",
   "version": "0.0.0",
-  "description": "NFL Web Application",
+  "description": "National Farm Life Application",
   "author": "NFL",
   "main": "electron/main.js",
   "private": true,

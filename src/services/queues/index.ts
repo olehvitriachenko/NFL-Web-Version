@@ -4,8 +4,6 @@
  */
 
 export { pdfQueueService } from './pdfQueueService';
-export { quickQuoteQueueService } from './quickQuoteQueueService';
-export { syncService } from './syncService';
 export type {
   PdfQueueItem,
   PdfQueueStatus,

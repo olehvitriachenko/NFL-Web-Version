@@ -23,9 +23,9 @@ export default defineConfig({
       // Service Worker буде вимкнено в runtime в main.tsx для file:// протоколу
       includeAssets: ["favicon.ico", "vite.svg"],
       manifest: {
-        name: "NFL Web App",
+        name: "NationalFarmLife",
         short_name: "NFL",
-        description: "NFL Web Application",
+        description: "National Farm Life Application",
         theme_color: "#ffffff",
         icons: [
           {

@@ -1,6 +1,6 @@
-# NFL Web App
+# NationalFarmLife
 
-NFL Web Application built with React, TypeScript, Vite, and Electron.
+National Farm Life Application built with React, TypeScript, Vite, and Electron.
 
 ## Tech Stack
 

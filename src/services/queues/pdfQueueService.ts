@@ -39,9 +39,11 @@ class PdfQueueService {
       throw new Error('PDF queue is only available in Electron environment');
     }
 
-    const result = await window.electron.pdfQueue.add({
+    const result = await window.electron.pdfQueue!.add({
       quote_id: options.quote.id ? Number(options.quote.id) : undefined,
-      agent_id: options.agent?.id ? Number(options.agent.id) : undefined,
+      agent_id: (options.agent && 'id' in options.agent && options.agent.id) 
+        ? (typeof options.agent.id === 'string' ? parseInt(options.agent.id, 10) : Number(options.agent.id)) 
+        : undefined,
       pdf_path: pdfPath,
       recipient_email: options.recipientEmail || '',
       recipient_name: options.insuredFirstName && options.insuredLastName
