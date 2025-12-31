@@ -1,0 +1,22 @@
+{
+  "react-native": {
+    "messaging_ios_auto_register_for_remote_messages": true,
+    "crashlytics_debuggable": false,
+    "analytics_auto_collection_enabled": true
+  },
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
+

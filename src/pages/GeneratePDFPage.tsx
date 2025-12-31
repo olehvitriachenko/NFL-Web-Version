@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
 import { generateAndSavePDF, generatePDFFromElement, type PDFOptions } from '../utils/pdf';
 import { Button } from '../components/Button';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 export const GeneratePDFPage = () => {
+  const analytics = useAnalytics();
   const [htmlContent, setHtmlContent] = useState(`<!DOCTYPE html>
 <html>
 <head>
@@ -100,6 +102,13 @@ export const GeneratePDFPage = () => {
     setIsGenerating(true);
     setMessage(null);
 
+    // Отслеживание начала генерации PDF
+    analytics.trackClick('generate_pdf', 'from_html', 'button');
+    analytics.trackEvent('pdf_generation_started', {
+      method: 'html',
+      page_type: 'generate_pdf'
+    });
+
     try {
       const filePath = await generateAndSavePDF(htmlContent, 'document.pdf', {
         pageSize: 'A4',
@@ -114,11 +123,24 @@ export const GeneratePDFPage = () => {
 
       if (filePath) {
         setMessage(`PDF успешно сохранен: ${filePath}`);
+        analytics.trackEvent('pdf_generated', {
+          method: 'html',
+          success: true,
+          file_name: 'document.pdf'
+        });
       } else {
         setMessage('Сохранение отменено');
+        analytics.trackEvent('pdf_generation_cancelled', {
+          method: 'html'
+        });
       }
     } catch (error) {
-      setMessage(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      setMessage(`Ошибка: ${errorMessage}`);
+      analytics.trackEvent('pdf_generation_error', {
+        method: 'html',
+        error: errorMessage
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -132,6 +154,13 @@ export const GeneratePDFPage = () => {
 
     setIsGenerating(true);
     setMessage(null);
+
+    // Отслеживание начала генерации PDF из элемента
+    analytics.trackClick('generate_pdf', 'from_element', 'button');
+    analytics.trackEvent('pdf_generation_started', {
+      method: 'element',
+      page_type: 'generate_pdf'
+    });
 
     try {
       const pdfBuffer = await generatePDFFromElement(previewRef, {
@@ -151,12 +180,25 @@ export const GeneratePDFPage = () => {
         
         if (filePath) {
           setMessage(`PDF успешно сохранен: ${filePath}`);
+          analytics.trackEvent('pdf_generated', {
+            method: 'element',
+            success: true,
+            file_name: 'preview.pdf'
+          });
         } else {
           setMessage('Сохранение отменено');
+          analytics.trackEvent('pdf_generation_cancelled', {
+            method: 'element'
+          });
         }
       }
     } catch (error) {
-      setMessage(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      setMessage(`Ошибка: ${errorMessage}`);
+      analytics.trackEvent('pdf_generation_error', {
+        method: 'element',
+        error: errorMessage
+      });
     } finally {
       setIsGenerating(false);
     }

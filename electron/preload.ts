@@ -3,6 +3,22 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electron', {
+  // OAuth callback listener
+  onOAuthCallback: (callback: (data: { code?: string; state?: string; error?: string; errorDescription?: string }) => void) => {
+    // Register listener
+    const handler = (_event: any, data: any) => {
+      callback(data);
+    };
+    ipcRenderer.on('oauth-callback', handler);
+    
+    // Request pending callback immediately after registration
+    ipcRenderer.send('oauth-callback-ready');
+    
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener('oauth-callback', handler);
+    };
+  },
   db: {
     saveAgent: (agent: any) => ipcRenderer.invoke('db:saveAgent', agent),
     getAllAgents: () => ipcRenderer.invoke('db:getAllAgents'),
@@ -78,6 +94,7 @@ contextBridge.exposeInMainWorld('electron', {
     openFile: (filePath: string) => ipcRenderer.invoke('pdf:openFile', filePath),
     readFile: (filePath: string) => ipcRenderer.invoke('pdf:readFile', filePath),
     fileExists: (filePath: string) => ipcRenderer.invoke('pdf:fileExists', filePath),
+    convertImageToBase64: (imagePath: string) => ipcRenderer.invoke('pdf:convertImageToBase64', imagePath),
   },
   app: {
     getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
@@ -90,6 +107,7 @@ contextBridge.exposeInMainWorld('electron', {
 declare global {
   interface Window {
     electron: {
+      onOAuthCallback: (callback: (data: { code?: string; state?: string; error?: string; errorDescription?: string }) => void) => () => void;
       db: {
         saveAgent: (agent: any) => Promise<{ success: boolean; id?: number; error?: string }>;
         getAllAgents: () => Promise<{ success: boolean; data: any[]; error?: string }>;
@@ -137,18 +155,18 @@ declare global {
           Promise<{ success: boolean; data?: Array<{ IssueAge: number; Factor: number }>; error?: string }>;
         getCashRates: (planCode: string, sex: string, issueAge: number, risk: string | null) => 
           Promise<{ success: boolean; data?: Array<{ Duration: number; Factor: number }>; error?: string }>;
-        getNSPRate: (planCode: string, sex: string, issueAge: number, risk: string) => 
-          Promise<{ success: boolean; data?: number | null; error?: string }>;
-        getFaceAmountLimits: (planCode: string) => 
-          Promise<{ success: boolean; data?: { minFace: number; maxFace: number; minUnit: number; maxUnit: number } | null; error?: string }>;
-        getTableNames: () => Promise<{ success: boolean; data?: string[]; error?: string }>;
-        tableExists: (tableName: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
-        getTableRecordCount: (tableName: string) => Promise<{ success: boolean; data?: number; error?: string }>;
-        getDatabaseVersion: (accessToken?: string) => Promise<{ success: boolean; data?: { rateDbVersion: string } | null; error?: string }>;
-        downloadDatabase: (accessToken?: string) => Promise<{ success: boolean; data?: string | null; error?: string }>;
-        updateDatabase: (accessToken?: string) => Promise<{ success: boolean; version?: string | null; message?: string; error?: string; restored?: boolean }>;
+      getNSPRate: (planCode: string, sex: string, issueAge: number, risk: string) => 
+        Promise<{ success: boolean; data?: number | null; error?: string }>;
+      getFaceAmountLimits: (planCode: string) => 
+        Promise<{ success: boolean; data?: { minFace: number; maxFace: number; minUnit: number; maxUnit: number } | null; error?: string }>;
+      getTableNames: () => Promise<{ success: boolean; data?: string[]; error?: string }>;
+      tableExists: (tableName: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
+      getTableRecordCount: (tableName: string) => Promise<{ success: boolean; data?: number; error?: string }>;
+      getDatabaseVersion: (accessToken?: string) => Promise<{ success: boolean; data?: { rateDbVersion: string } | null; error?: string }>;
+      downloadDatabase: (accessToken?: string) => Promise<{ success: boolean; data?: string | null; error?: string }>;
+      updateDatabase: (accessToken?: string) => Promise<{ success: boolean; version?: string | null; message?: string; error?: string; restored?: boolean }>;
       };
-  pdf: {
+      pdf: {
     generateFromHTML: (htmlContent: string, options?: {
       margins?: {
         top?: number;
@@ -166,11 +184,11 @@ declare global {
     readFile: (filePath: string) => Promise<{ success: boolean; data?: number[]; error?: string }>;
     fileExists: (filePath: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
   };
-  app: {
-    getUserDataPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
-    getAppPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
-    getPdfsPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
-  };
+      app: {
+        getUserDataPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+        getAppPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+        getPdfsPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+      };
     };
   }
 }

@@ -5,11 +5,13 @@ import { Button } from "../components/Button";
 import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
 import { useQuickFormStore } from "../stores/QuickFormStore";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const QuoteFormPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
-  const { insured, payorEnabled, payor, updateForm } = useQuickFormStore();
+  const analytics = useAnalytics();
+  const { insured, payorEnabled, payor, company, updateForm } = useQuickFormStore();
 
   // Функция для нормализации smoking habit (приводит к формату опций select)
   const normalizeSmokingHabit = (value: string): "Non smoker" | "Standard" => {
@@ -83,6 +85,18 @@ export const QuoteFormPage = () => {
   };
 
   const handleStartQuote = () => {
+    // Отслеживание начала создания котировки
+    analytics.trackClick('start_quote', 'quote_form_submit', 'button');
+    analytics.trackFormInteraction('quote_form', 'submit', 6);
+    analytics.trackEvent('quote_started', {
+      company: company || 'unknown',
+      insured_age: age,
+      insured_sex: sex,
+      insured_smoking: smokingHabit,
+      has_payor: payorToggle,
+      payor_age: payorToggle ? payorAge : null
+    });
+    
     // Navigate to configure quote page
     navigate({ to: "/configure-quote" });
   };

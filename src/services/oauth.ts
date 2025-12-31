@@ -114,20 +114,47 @@ export async function handleOAuthCallback(code: string, state: string): Promise<
 
     // Exchange OAuth token for backend tokens
     console.log('[OAuth] Exchanging OAuth token for backend tokens...');
-    const backendResponse = await HttpService.loginNfl(tokenResponse.access_token);
-    
-    if (backendResponse.tokens) {
-      console.log('[OAuth] Backend tokens received and saved');
+    let backendResponse: any = null;
+    try {
+      backendResponse = await Promise.race([
+        HttpService.loginNfl(tokenResponse.access_token),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Backend login timeout')), 30000)
+        )
+      ]) as any;
+      
+      if (backendResponse?.tokens) {
+        console.log('[OAuth] Backend tokens received and saved');
+      } else {
+        console.warn('[OAuth] Backend login completed but no tokens received');
+      }
+    } catch (error) {
+      console.error('[OAuth] Backend login failed, but continuing with OAuth token:', error);
+      // Continue even if backend login fails - we still have OAuth token
+      backendResponse = null;
     }
 
     // Save agent information from backend response (has priority over OAuth userInfo)
+    // Use Promise.allSettled to not block on agent save
+    const agentSavePromises: Promise<void>[] = [];
     if (backendResponse.user) {
       console.log('[OAuth] Saving agent from backend response...');
-      await saveAgentFromUserData(backendResponse.user, userInfo);
+      agentSavePromises.push(saveAgentFromUserData(backendResponse.user, userInfo));
     } else if (userInfo) {
       // Fallback to OAuth userInfo if backend doesn't return user data
       console.log('[OAuth] Saving agent from OAuth userInfo...');
-      await saveAgentFromUserData(userInfo, userInfo);
+      agentSavePromises.push(saveAgentFromUserData(userInfo, userInfo));
+    }
+    
+    // Don't wait for agent save - it's not critical
+    if (agentSavePromises.length > 0) {
+      Promise.allSettled(agentSavePromises).then((results) => {
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            console.warn(`[OAuth] Agent save ${index} failed:`, result.reason);
+          }
+        });
+      });
     }
 
     // Clean up OAuth state
@@ -168,12 +195,16 @@ async function exchangeCodeForToken(
       }),
     });
 
+    console.log('[OAuth] Token exchange response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('[OAuth] Token exchange failed:', response.status, errorText);
       throw new Error(`Token exchange failed: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('[OAuth] Token received successfully');
     return data;
   } catch (error) {
     console.error('[OAuth] Error exchanging code for token:', error);
@@ -327,19 +358,34 @@ async function saveAgentFromUserData(user: any, oauthUserInfo?: any): Promise<vo
 
     console.log('[OAuth] Final agent info to save:', JSON.stringify(finalAgentInfo, null, 2));
 
-    // Check if agent already exists by email
-    const agents = await db.getAllAgents();
-    const existingAgent = agents.find(a => a.email === finalAgentInfo.email);
+    // Save agent with timeout to prevent hanging
+    const saveAgentWithTimeout = async () => {
+      return Promise.race([
+        (async () => {
+          // Check if agent already exists by email
+          const agents = await db.getAllAgents();
+          const existingAgent = agents.find(a => a.email === finalAgentInfo.email);
 
-    if (existingAgent) {
-      // Update existing agent
-      await db.updateAgent(existingAgent.id, finalAgentInfo);
-      console.log('[OAuth] Agent information updated, ID:', existingAgent.id);
-    } else {
-      // Create new agent
-      const agentId = await db.saveAgent(finalAgentInfo);
-      console.log('[OAuth] Agent information saved, ID:', agentId);
-    }
+          if (existingAgent) {
+            // Update existing agent
+            await db.updateAgent(existingAgent.id, finalAgentInfo);
+            console.log('[OAuth] Agent information updated, ID:', existingAgent.id);
+          } else {
+            // Create new agent
+            const agentId = await db.saveAgent(finalAgentInfo);
+            console.log('[OAuth] Agent information saved, ID:', agentId);
+          }
+        })(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Agent save timeout')), 5000)
+        )
+      ]);
+    };
+
+    await saveAgentWithTimeout().catch((error) => {
+      console.warn('[OAuth] Agent save failed or timed out, continuing anyway:', error);
+      // Don't throw - agent save is not critical for auth flow
+    });
   } catch (error) {
     console.error('[OAuth] Error saving agent information:', error);
     // Don't throw - agent info save failure shouldn't break auth flow

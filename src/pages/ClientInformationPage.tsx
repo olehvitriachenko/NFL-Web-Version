@@ -6,10 +6,12 @@ import { FormField } from "../components/FormField";
 import { navigateBack } from "../utils/navigation";
 import { BORDER } from "../constants/theme";
 import { useQuickFormStore } from "../stores/QuickFormStore";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const ClientInformationPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const { updateConfigure } = useQuickFormStore();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -47,8 +49,23 @@ export const ClientInformationPage = () => {
   };
 
   const handleSave = () => {
-    // Format insured info string
+    // Отслеживание сохранения информации о клиенте
     const age = dateOfBirth ? new Date().getFullYear() - new Date(dateOfBirth).getFullYear() : "";
+    
+    analytics.trackClick('save_client_info', 'client_information_form', 'button');
+    analytics.trackFormInteraction('client_information_form', 'submit', 7);
+    analytics.trackEvent('client_information_saved', {
+      has_first_name: !!firstName,
+      has_last_name: !!lastName,
+      has_date_of_birth: !!dateOfBirth,
+      age: age || null,
+      sex: sex,
+      smoking_habit: smokingHabit,
+      has_rate_table: rateTable !== "None",
+      has_flat_extra: !!rateFlatExtra
+    });
+    
+    // Format insured info string
     const insuredInfoString = `${firstName} ${lastName}${firstName || lastName ? ", " : ""}${sex === "male" ? "Male" : "Female"}${age ? `, Age ${age}` : ""}, ${smokingHabit}`;
     
     // Save formatted string for display

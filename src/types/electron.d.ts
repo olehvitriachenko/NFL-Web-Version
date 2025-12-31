@@ -74,6 +74,7 @@ export interface ElectronAPI {
     openFile: (filePath: string) => Promise<{ success: boolean; error?: string }>;
     readFile: (filePath: string) => Promise<{ success: boolean; data?: number[]; error?: string }>;
     fileExists: (filePath: string) => Promise<{ success: boolean; data?: boolean; error?: string }>;
+    convertImageToBase64: (imagePath: string) => Promise<{ success: boolean; data?: string; error?: string }>;
   };
   app: {
     getUserDataPath: () => Promise<{ success: boolean; data?: string; error?: string }>;

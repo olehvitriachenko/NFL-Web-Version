@@ -2,18 +2,34 @@ import { useState } from "react";
 import { Button } from "../components/Button";
 import nflLogo from "/nfl_brand_logo.png";
 import { startOAuthFlow } from "../services/oauth";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const LoginPage = () => {
   const [isOpening, setIsOpening] = useState(false);
+  const analytics = useAnalytics();
 
   const handleStart = () => {
     setIsOpening(true);
+    
+    // Отслеживание попытки логина
+    analytics.trackEvent('login_attempted', {
+      method: 'oauth',
+      provider: 'nflic'
+    });
+    
     try {
       // Start OAuth authorization flow - will redirect to OAuth server
       startOAuthFlow();
       // Note: window.location.href will redirect, so code after this won't execute
     } catch (error) {
       console.error('Failed to start OAuth flow:', error);
+      
+      // Отслеживание ошибки логина
+      analytics.trackEvent('login_error', {
+        error: error instanceof Error ? error.message : 'unknown',
+        method: 'oauth'
+      });
+      
       setIsOpening(false);
     }
   };

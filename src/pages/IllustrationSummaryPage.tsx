@@ -9,10 +9,12 @@ import { useQuickFormStore } from "../stores/QuickFormStore";
 import { getIllustrationData } from "../services/illustrationSummary";
 import { shortSex } from "../utils/shortSex";
 import { totalPrepaidNeeded } from "../services/prepayPolicy";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const IllustrationSummaryPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const {
     insured,
     product,
@@ -254,6 +256,15 @@ export const IllustrationSummaryPage = () => {
   };
 
   const handleNext = () => {
+    // Отслеживание перехода к email котировке
+    analytics.trackClick('continue_to_email', 'illustration_summary_next', 'button');
+    analytics.trackEvent('illustration_completed', {
+      product: product || 'unknown',
+      face_amount: faceAmount || 0,
+      has_prepay: prepayYears > 0,
+      prepay_years: prepayYears || 0
+    });
+    
     navigate({ to: "/email-quote" });
   };
 

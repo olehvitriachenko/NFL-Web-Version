@@ -13,10 +13,12 @@ import { openPDFFile } from "../utils/pdf";
 import { quoteService, quickQuoteQueueService, syncService, pdfQueueService } from "../services/quotes";
 import type { QuickQuoteRequest } from "../types/quotes";
 import { getProductShortCode } from "../utils/productCode";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const EmailQuotePage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const {
     insured,
     product,
@@ -289,6 +291,9 @@ export const EmailQuotePage = () => {
       return;
     }
     
+    // Отслеживание попытки просмотра PDF
+    analytics.trackClick('view_pdf', 'quote_pdf', 'button');
+    
     // Validate all fields before proceeding
     const validation = validateAllFields();
     if (!validation.isValid) {
@@ -302,10 +307,20 @@ export const EmailQuotePage = () => {
           }, 100);
         }
       }
+      analytics.trackEvent('pdf_view_validation_error', {
+        field: validation.firstErrorField || 'unknown'
+      });
       return;
     }
     
     setIsGeneratingPDF(true);
+    
+    // Отслеживание начала генерации PDF котировки
+    analytics.trackEvent('quote_pdf_generation_started', {
+      company: company || 'unknown',
+      product: product || 'unknown',
+      face_amount: faceAmount || 0
+    });
     try {
       // Get premium data
       const premiumResult = await getPremium();
@@ -396,6 +411,15 @@ export const EmailQuotePage = () => {
       
       if (filePath) {
         console.log('[EmailQuotePage] PDF generated successfully:', filePath);
+        
+        // Отслеживание успешной генерации PDF котировки
+        analytics.trackEvent('quote_pdf_generated', {
+          company: company || 'unknown',
+          product: product || 'unknown',
+          face_amount: faceAmount || 0,
+          quote_id: quoteData.id,
+          success: true
+        });
         
         // Save quote to database and add to sync queue
         try {
@@ -633,6 +657,14 @@ export const EmailQuotePage = () => {
     } catch (error) {
       console.error('[EmailQuotePage] Error generating PDF:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Отслеживание ошибки генерации PDF
+      analytics.trackEvent('quote_pdf_generation_error', {
+        company: company || 'unknown',
+        product: product || 'unknown',
+        error: errorMessage
+      });
+      
       alert(`Failed to generate PDF: ${errorMessage}. Please check the console for details.`);
     } finally {
       setIsGeneratingPDF(false);

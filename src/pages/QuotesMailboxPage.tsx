@@ -5,6 +5,7 @@ import { navigateBack } from '../utils/navigation';
 import { pdfQueueService } from '../services/quotes/pdfQueueService';
 import { databaseAdapter } from '../services/quotes/databaseAdapter';
 import type { PdfQueueItem } from '../types/quotes';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface QuoteDisplayItem {
   id: number;
@@ -22,6 +23,7 @@ interface QuoteDisplayItem {
 export const QuotesMailboxPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const [sentQuotes, setSentQuotes] = useState<QuoteDisplayItem[]>([]);
   const [unsentQuotes, setUnsentQuotes] = useState<QuoteDisplayItem[]>([]);
   const [undeliverableQuotes, setUndeliverableQuotes] = useState<QuoteDisplayItem[]>([]);
@@ -157,11 +159,18 @@ export const QuotesMailboxPage = () => {
     navigate({ to: '/home' });
   };
 
-  const handleViewPdf = (pdfPath: string | undefined) => {
+  const handleViewPdf = (pdfPath: string | undefined, quoteId?: number) => {
     if (!pdfPath) {
       console.error('PDF path not available');
       return;
     }
+    
+    // Отслеживание просмотра PDF котировки
+    analytics.trackClick('view_quote_pdf', `quote_${quoteId || 'unknown'}`, 'button');
+    analytics.trackEvent('quote_pdf_viewed', {
+      quote_id: quoteId,
+      source: 'quotes_mailbox'
+    });
     
     // Encode the file path for URL
     const encodedPath = encodeURIComponent(pdfPath);
@@ -255,7 +264,7 @@ export const QuotesMailboxPage = () => {
           </p>
         </div>
         <button
-          onClick={() => handleViewPdf(quote.pdfPath)}
+          onClick={() => handleViewPdf(quote.pdfPath, quote.id)}
           disabled={!quote.pdfPath}
           className="bg-[#39458C] text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-[#0D175C]/90 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ borderRadius: 10 }}

@@ -9,6 +9,7 @@ import { FiSearch } from 'react-icons/fi';
 import { db } from '../utils/database';
 import { syncService } from '../services/quotes';
 import { quickQuoteQueueService } from '../services/quotes';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface Illustration {
   id: string;
@@ -138,6 +139,7 @@ const checkFileExists = async (filePath: string): Promise<boolean> => {
 export const IllustrationHistoryPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null);
   const [illustrations, setIllustrations] = useState<Illustration[]>([]);
@@ -304,6 +306,12 @@ export const IllustrationHistoryPage = () => {
   const handleDeleteIllustration = async (illustrationId: string) => {
     console.log('[IllustrationHistoryPage] handleDeleteIllustration called with ID:', illustrationId);
     
+    // Отслеживание удаления иллюстрации
+    analytics.trackClick('delete_illustration', illustrationId, 'button');
+    analytics.trackEvent('illustration_deletion_started', {
+      illustration_id: illustrationId
+    });
+    
     try {
       // Try to find queue item by quote_id first
       const quoteId = parseInt(illustrationId, 10);
@@ -373,9 +381,21 @@ export const IllustrationHistoryPage = () => {
       setIllustrations(prev => prev.filter(ill => ill.id !== illustrationId));
       console.log('[IllustrationHistoryPage] State updated, illustration removed from list');
       
+      // Отслеживание успешного удаления
+      analytics.trackEvent('illustration_deleted', {
+        illustration_id: illustrationId,
+        success: true
+      });
+      
       console.log('[IllustrationHistoryPage] Illustration deleted successfully:', illustrationId);
     } catch (error) {
       console.error('[IllustrationHistoryPage] Error deleting illustration:', error);
+      
+      // Отслеживание ошибки удаления
+      analytics.trackEvent('illustration_deletion_error', {
+        illustration_id: illustrationId,
+        error: error instanceof Error ? error.message : 'unknown'
+      });
       console.error('[IllustrationHistoryPage] Error details:', {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -385,6 +405,14 @@ export const IllustrationHistoryPage = () => {
   };
 
   const handleIllustrationClick = async (illustration: Illustration) => {
+    // Отслеживание просмотра иллюстрации
+    analytics.trackClick('view_illustration', illustration.id, 'card');
+    analytics.trackEvent('illustration_viewed', {
+      illustration_id: illustration.id,
+      product: illustration.product || 'unknown',
+      death_benefit: illustration.deathBenefit || 0
+    });
+    
     // Check if we're in Electron environment
     const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
     if (!isElectron) {

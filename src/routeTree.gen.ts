@@ -21,6 +21,7 @@ import { Route as IllustrationSummaryRouteImport } from './routes/illustration-s
 import { Route as IllustrationHistoryRouteImport } from './routes/illustration-history'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as GeneratePdfRouteImport } from './routes/generate-pdf'
+import { Route as FirebaseTestRouteImport } from './routes/firebase-test'
 import { Route as EmailQuoteRouteImport } from './routes/email-quote'
 import { Route as ConfigureQuoteRouteImport } from './routes/configure-quote'
 import { Route as ClientInformationRouteImport } from './routes/client-information'
@@ -87,6 +88,11 @@ const GeneratePdfRoute = GeneratePdfRouteImport.update({
   path: '/generate-pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FirebaseTestRoute = FirebaseTestRouteImport.update({
+  id: '/firebase-test',
+  path: '/firebase-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmailQuoteRoute = EmailQuoteRouteImport.update({
   id: '/email-quote',
   path: '/email-quote',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/client-information': typeof ClientInformationRoute
   '/configure-quote': typeof ConfigureQuoteRoute
   '/email-quote': typeof EmailQuoteRoute
+  '/firebase-test': typeof FirebaseTestRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/client-information': typeof ClientInformationRoute
   '/configure-quote': typeof ConfigureQuoteRoute
   '/email-quote': typeof EmailQuoteRoute
+  '/firebase-test': typeof FirebaseTestRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/client-information': typeof ClientInformationRoute
   '/configure-quote': typeof ConfigureQuoteRoute
   '/email-quote': typeof EmailQuoteRoute
+  '/firebase-test': typeof FirebaseTestRoute
   '/generate-pdf': typeof GeneratePdfRoute
   '/home': typeof HomeRoute
   '/illustration-history': typeof IllustrationHistoryRoute
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/client-information'
     | '/configure-quote'
     | '/email-quote'
+    | '/firebase-test'
     | '/generate-pdf'
     | '/home'
     | '/illustration-history'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/client-information'
     | '/configure-quote'
     | '/email-quote'
+    | '/firebase-test'
     | '/generate-pdf'
     | '/home'
     | '/illustration-history'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/client-information'
     | '/configure-quote'
     | '/email-quote'
+    | '/firebase-test'
     | '/generate-pdf'
     | '/home'
     | '/illustration-history'
@@ -237,6 +249,7 @@ export interface RootRouteChildren {
   ClientInformationRoute: typeof ClientInformationRoute
   ConfigureQuoteRoute: typeof ConfigureQuoteRoute
   EmailQuoteRoute: typeof EmailQuoteRoute
+  FirebaseTestRoute: typeof FirebaseTestRoute
   GeneratePdfRoute: typeof GeneratePdfRoute
   HomeRoute: typeof HomeRoute
   IllustrationHistoryRoute: typeof IllustrationHistoryRoute
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GeneratePdfRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/firebase-test': {
+      id: '/firebase-test'
+      path: '/firebase-test'
+      fullPath: '/firebase-test'
+      preLoaderRoute: typeof FirebaseTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/email-quote': {
       id: '/email-quote'
       path: '/email-quote'
@@ -381,6 +401,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientInformationRoute: ClientInformationRoute,
   ConfigureQuoteRoute: ConfigureQuoteRoute,
   EmailQuoteRoute: EmailQuoteRoute,
+  FirebaseTestRoute: FirebaseTestRoute,
   GeneratePdfRoute: GeneratePdfRoute,
   HomeRoute: HomeRoute,
   IllustrationHistoryRoute: IllustrationHistoryRoute,

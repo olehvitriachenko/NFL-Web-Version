@@ -1,3 +1,24 @@
+// Disable Service Worker for Electron and in dev mode (file:// protocol does not support Service Worker, and in dev it causes CORS errors)
+if ('serviceWorker' in navigator) {
+  console.log('[Main] Attempting to disable Service Workers...');
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      registration.unregister().catch((e) => {
+        console.warn('[Main] Error unregistering service worker:', e);
+      });
+    });
+    console.log('[Main] All existing Service Workers unregistered.');
+  }).catch((e) => {
+    console.error('[Main] Error getting service worker registrations:', e);
+  });
+
+  const originalRegister = navigator.serviceWorker.register;
+  navigator.serviceWorker.register = function(...args) {
+    console.log('[Main] Service worker registration blocked to prevent CORS issues');
+    return Promise.reject(new Error('Service worker registration disabled'));
+  };
+}
+
 import { StrictMode } from "react";
 import { useEffect } from "react";
 import { createRoot } from "react-dom/client";
@@ -167,24 +188,50 @@ const router = createRouter({
   defaultNotFoundComponent: NotFoundComponent,
 });
 
-// Вимкнути Service Worker для Electron и в dev режиме (file:// протокол не підтримує Service Worker, а в dev он вызывает CORS ошибки)
-if ('serviceWorker' in navigator) {
-  // Отключаем все зарегистрированные service workers
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => {
-      registration.unregister().catch(() => {
-        // Игнорируем ошибки при отключении
-      });
+// Log all router navigations
+router.subscribe('onBeforeLoad', ({ pathChanged }) => {
+  if (pathChanged) {
+    console.log('[Router] 🔄 onBeforeLoad:', router.state.location.href);
+  }
+});
+
+router.subscribe('onLoad', ({ pathChanged }) => {
+  if (pathChanged) {
+    console.log('[Router] ✅ onLoad:', router.state.location.href);
+  }
+});
+
+// Log window.location changes
+if (typeof window !== 'undefined') {
+  const originalPushState = window.history.pushState;
+  const originalReplaceState = window.history.replaceState;
+  
+  window.history.pushState = function(...args) {
+    console.log('[Router] 📍 pushState:', args[2] || window.location.href);
+    return originalPushState.apply(this, args);
+  };
+  
+  window.history.replaceState = function(...args) {
+    console.log('[Router] 🔄 replaceState:', args[2] || window.location.href);
+    return originalReplaceState.apply(this, args);
+  };
+  
+  // Log hash changes
+  window.addEventListener('hashchange', (event) => {
+    console.log('[Router] #️⃣ hashchange:', {
+      oldURL: event.oldURL,
+      newURL: event.newURL,
+      hash: window.location.hash
     });
   });
   
-  // Блокируем регистрацию новых service workers
-  const originalRegister = navigator.serviceWorker.register;
-  navigator.serviceWorker.register = function(...args) {
-    console.log('[Main] Service worker registration blocked to prevent CORS issues');
-    return Promise.reject(new Error('Service worker registration disabled'));
-  };
+  // Log popstate (back/forward)
+  window.addEventListener('popstate', (event) => {
+    console.log('[Router] ⬅️ popstate:', window.location.href);
+  });
 }
+
+// Service Worker уже заблокирован выше для Electron
 
 // Реєстрація типів для TypeScript
 declare module "@tanstack/react-router" {

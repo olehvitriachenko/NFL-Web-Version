@@ -1177,24 +1177,47 @@ class PdfService {
         return null;
       }
 
-      // Try to fetch the image and convert to base64
-      // In Electron, public files are available at runtime
-      // We'll use a data URL approach by loading the image
-      const response = await fetch(imagePath);
-      if (!response.ok) {
-        console.warn(`[PdfService] Failed to load image: ${imagePath}`);
-        return null;
+      // First, try to fetch the image (works in dev mode with Vite dev server)
+      try {
+        const response = await fetch(imagePath);
+        if (response.ok) {
+          const blob = await response.blob();
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve(reader.result as string);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch (fetchError) {
+        console.log(
+          `[PdfService] Fetch failed for ${imagePath}, trying IPC approach:`,
+          fetchError
+        );
       }
 
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      // If fetch fails, try to use IPC handler for converting image to base64
+      // This handler runs in the main process and has access to file system
+      const pdfApi = window.electron!.pdf as any;
+      if (pdfApi.convertImageToBase64) {
+        const result = await pdfApi.convertImageToBase64(imagePath);
+        if (result.success && result.data) {
+          console.log(`[PdfService] Successfully converted image to base64 via IPC`);
+          return result.data;
+        } else {
+          console.warn(
+            `[PdfService] IPC conversion failed: ${result.error}`
+          );
+        }
+      } else {
+        console.warn(
+          "[PdfService] convertImageToBase64 IPC handler not available"
+        );
+      }
+
+      return null;
     } catch (error) {
       console.warn(
         `[PdfService] Error converting image to base64: ${imagePath}`,

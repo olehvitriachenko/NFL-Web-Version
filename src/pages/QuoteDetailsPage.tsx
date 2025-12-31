@@ -6,6 +6,7 @@ import { navigateBack } from "../utils/navigation";
 import { BORDER } from "../constants/theme";
 import { useQuickFormStore } from "../stores/QuickFormStore";
 import type { Requirement } from "../services/qualificationExaminations";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 // Helper function to format number with commas and decimals
 const formatCurrency = (amount: number): string => {
@@ -20,6 +21,7 @@ const formatNumber = (num: number): string => {
 export const QuoteDetailsPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const { 
     insured, 
     payorEnabled,
@@ -78,6 +80,18 @@ export const QuoteDetailsPage = () => {
   };
 
   const handleIllustrate = () => {
+    // Отслеживание перехода к иллюстрации
+    analytics.trackClick('illustrate', 'quote_details_illustrate', 'button');
+    analytics.trackEvent('illustration_started', {
+      product: product || 'unknown',
+      face_amount: faceAmount || 0,
+      total_premium: premiumResult?.totalPremium || 0,
+      has_waiver: waiverOfPremiumEnabled || false,
+      has_accidental_death: accidentalDeathEnabled || false,
+      has_dependent_child: dependentChildEnabled || false,
+      has_guaranteed_insurability: guaranteedInsurabilityEnabled || false
+    });
+    
     navigate({ to: "/illustration-summary" });
   };
 

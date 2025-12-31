@@ -4,10 +4,12 @@ import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/Button";
 import { navigateBack } from "../utils/navigation";
 import { BORDER, COLORS } from "../constants/theme";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const SetupClientPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const [effectiveStartDate, setEffectiveStartDate] = useState("2025-12-25");
   const [insuredInfo, setInsuredInfo] = useState<string | null>(null);
   const [payorInfo, setPayorInfo] = useState<string | null>(null);
@@ -68,10 +70,12 @@ export const SetupClientPage = () => {
   };
 
   const handleEditInsured = () => {
+    analytics.trackClick('edit_insured', 'setup_client_edit_insured', 'button');
     navigate({ to: "/client-information" });
   };
 
   const handleAddPayor = () => {
+    analytics.trackClick('add_payor', 'setup_client_add_payor', 'button');
     navigate({ to: "/payor-information" });
   };
 

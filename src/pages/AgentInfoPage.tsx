@@ -6,10 +6,12 @@ import { Button } from '../components/Button';
 import { navigateBack } from '../utils/navigation';
 import { db } from '../utils/database';
 import type { AgentInfo } from '../types/agent';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 export const AgentInfoPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const [formData, setFormData] = useState<AgentInfo>({
     firstName: '',
     lastName: '',
@@ -59,8 +61,15 @@ export const AgentInfoPage = () => {
     return '';
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    analytics.trackInputFocus(name, 'agent_info_form');
+  };
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    analytics.trackInputBlur(name, 'agent_info_form');
+    
     const error = validateField(name, value);
     if (error) {
       setErrors((prev) => ({ ...prev, [name]: error }));
@@ -136,14 +145,29 @@ export const AgentInfoPage = () => {
     e.preventDefault();
     
     if (!validateForm()) {
+      analytics.trackFormInteraction('agent_info_form', 'submit', Object.keys(formData).length);
+      analytics.trackEvent('agent_info_validation_error', {
+        fields_count: Object.keys(formData).length,
+        errors_count: Object.keys(errors).length
+      });
       return;
     }
+    
+    analytics.trackFormInteraction('agent_info_form', 'submit', Object.keys(formData).length);
     
     try {
       await db.init();
       if (editingId) {
         // Update existing agent
         await db.updateAgent(editingId, formData);
+        
+        // Отслеживание обновления информации об агенте
+        analytics.trackEvent('agent_info_updated', {
+          agent_id: editingId,
+          has_email: !!formData.email,
+          has_phone: !!formData.phone
+        });
+        
         alert('Agent info updated successfully!');
         // Reload agents to get updated data
         await loadAgents();
@@ -166,6 +190,14 @@ export const AgentInfoPage = () => {
       } else {
         // Create new agent
         const newId = await db.saveAgent(formData);
+        
+        // Отслеживание сохранения новой информации об агенте
+        analytics.trackEvent('agent_info_created', {
+          agent_id: newId,
+          has_email: !!formData.email,
+          has_phone: !!formData.phone
+        });
+        
         alert('Agent info saved successfully!');
         // Set editing ID to the newly created agent
         setEditingId(newId);
@@ -255,6 +287,7 @@ export const AgentInfoPage = () => {
                 value={formData.firstName}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                onFocus={handleFocus}
                 error={errors.firstName}
                 required
               />
@@ -264,6 +297,7 @@ export const AgentInfoPage = () => {
                 value={formData.lastName}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                onFocus={handleFocus}
                 error={errors.lastName}
                 required
               />
@@ -273,6 +307,7 @@ export const AgentInfoPage = () => {
                 value={formData.street}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                onFocus={handleFocus}
                 error={errors.street}
                 required
               />
@@ -282,6 +317,7 @@ export const AgentInfoPage = () => {
                 value={formData.city}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                onFocus={handleFocus}
                 error={errors.city}
                 required
               />
@@ -293,6 +329,7 @@ export const AgentInfoPage = () => {
                     value={formData.state}
                     onChange={handleChange}
                     onBlur={handleBlur}
+                    onFocus={handleFocus}
                     error={errors.state}
                     required
                   />
@@ -304,6 +341,7 @@ export const AgentInfoPage = () => {
                     value={formData.zipCode}
                     onChange={handleChange}
                     onBlur={handleBlur}
+                    onFocus={handleFocus}
                     error={errors.zipCode}
                     required
                   />
@@ -316,6 +354,7 @@ export const AgentInfoPage = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                onFocus={handleFocus}
                 error={errors.phone}
                 required
               />
@@ -326,6 +365,7 @@ export const AgentInfoPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                onFocus={handleFocus}
                 error={errors.email}
                 required
               />

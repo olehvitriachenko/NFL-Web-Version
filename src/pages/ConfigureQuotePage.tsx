@@ -11,6 +11,7 @@ import type { ProductType } from "../types/planCodes";
 import { getProductShortCode } from "../utils/productCode";
 import { shortSex } from "../utils/shortSex";
 import { shortSmokingStatus } from "../utils/shortSmokingStatus";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 // Type for quote data
 interface QuoteData {
@@ -206,6 +207,7 @@ const isAgeValidForProduct = (productName: string, age: number): boolean => {
 export const ConfigureQuotePage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const { updateConfigure, product: storeProduct, paymentMethod: storePaymentMethod, 
     paymentMode: storePaymentMode, faceAmount: storeFaceAmount, 
     waiverOfPremiumEnabled: storeWaiverOfPremium, accidentalDeathEnabled: storeAccidentalDeath,
@@ -745,8 +747,25 @@ export const ConfigureQuotePage = () => {
 
   const handleDetails = () => {
     if (!isFormValid()) {
+      analytics.trackEvent('quote_details_navigation_blocked', {
+        reason: 'form_invalid'
+      });
       return; // Prevent navigation if form is invalid
     }
+    
+    // Отслеживание перехода к деталям котировки
+    analytics.trackClick('quote_details', 'continue_button', 'button');
+    analytics.trackEvent('quote_configured', {
+      product: product || 'unknown',
+      payment_method: paymentMethod || 'unknown',
+      payment_mode: paymentMode || 'unknown',
+      face_amount: parseFormattedNumber(faceAmount) || 0,
+      has_waiver: waiverOfPremium || false,
+      has_accidental_death: accidentalDeath || false,
+      has_dependent_child: dependentChild || false,
+      has_guaranteed_insurability: guaranteedInsurability || false
+    });
+    
     navigate({ to: "/quote-details" });
   };
 
@@ -756,9 +775,26 @@ export const ConfigureQuotePage = () => {
       return;
     }
 
+    // Отслеживание расчета премии
+    analytics.trackClick('calculate_premium', 'reverse_lookup', 'button');
+    analytics.trackEvent('premium_calculation_started', {
+      method: 'reverse_lookup',
+      target_premium: targetPremiumValue,
+      product: product || 'unknown'
+    });
+
     setIsCalculating(true);
     try {
       const result = await reverseLookup(targetPremiumValue);
+      
+      // Отслеживание успешного расчета
+      analytics.trackEvent('premium_calculated', {
+        method: 'reverse_lookup',
+        target_premium: targetPremiumValue,
+        calculated_face_amount: result.faceAmount,
+        product: product || 'unknown',
+        success: true
+      });
       
       // Update face amount
       setFaceAmount(formatNumberWithCommas(result.faceAmount));

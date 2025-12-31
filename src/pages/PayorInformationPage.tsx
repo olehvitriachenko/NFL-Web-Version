@@ -5,10 +5,12 @@ import { Button } from "../components/Button";
 import { FormField } from "../components/FormField";
 import { navigateBack } from "../utils/navigation";
 import { BORDER } from "../constants/theme";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const PayorInformationPage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -45,8 +47,23 @@ export const PayorInformationPage = () => {
   };
 
   const handleSave = () => {
-    // Format payor info string
+    // Отслеживание сохранения информации о плательщике
     const age = dateOfBirth ? new Date().getFullYear() - new Date(dateOfBirth).getFullYear() : "";
+    
+    analytics.trackClick('save_payor_info', 'payor_information_form', 'button');
+    analytics.trackFormInteraction('payor_information_form', 'submit', 7);
+    analytics.trackEvent('payor_information_saved', {
+      has_first_name: !!firstName,
+      has_last_name: !!lastName,
+      has_date_of_birth: !!dateOfBirth,
+      age: age || null,
+      sex: sex,
+      smoking_habit: smokingHabit,
+      has_rate_table: rateTable !== "None",
+      has_flat_extra: !!rateFlatExtra
+    });
+    
+    // Format payor info string
     const payorInfoString = `${firstName} ${lastName}${firstName || lastName ? ", " : ""}${sex === "male" ? "Male" : "Female"}${age ? `, Age ${age}` : ""}, ${smokingHabit}`;
     
     // Save formatted string for display

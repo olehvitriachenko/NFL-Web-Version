@@ -10,12 +10,17 @@ import {
   FiFileText,
 } from "react-icons/fi";
 import { authStorage } from "../services/auth/authStorage";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export const HomePage = () => {
   const navigate = useNavigate();
+  const analytics = useAnalytics();
   const [showUpdateModal, setShowUpdateModal] = useState(true);
 
   const handleLogout = async () => {
+    // Отслеживание выхода
+    analytics.trackEvent('logout', {});
+    
     try {
       // Очистить токены авторизации
       await authStorage.clearTokens();
@@ -32,9 +37,21 @@ export const HomePage = () => {
       navigate({ to: "/" });
     } catch (error) {
       console.error('[HomePage] Error during logout:', error);
+      analytics.trackEvent('logout_error', {
+        error: error instanceof Error ? error.message : 'unknown'
+      });
       // Все равно перенаправить на логин даже при ошибке
       navigate({ to: "/" });
     }
+  };
+
+  const handleMenuClick = (menuItem: string, path: string) => {
+    analytics.trackClick('menu_button', menuItem.toLowerCase().replace(/\s+/g, '_'), 'menu');
+    analytics.trackEvent('menu_navigation', {
+      menu_item: menuItem,
+      destination: path
+    });
+    navigate({ to: path });
   };
 
   return (
@@ -49,35 +66,47 @@ export const HomePage = () => {
             <MenuButton
               icon={FiUser}
               label="Agent Info"
-              onClick={() => navigate({ to: "/agent-info" })}
+              onClick={() => handleMenuClick("Agent Info", "/agent-info")}
             />
             <MenuButton
               icon={FiMessageSquare}
               label="Quick Quote"
-              onClick={() => navigate({ to: "/quick-quote" })}
+              onClick={() => handleMenuClick("Quick Quote", "/quick-quote")}
             />
             <MenuButton
               icon={FiMessageSquare}
               label="Quote life"
-              onClick={() => navigate({ to: "/quote-life" })}
+              onClick={() => handleMenuClick("Quote life", "/quote-life")}
             />
             <MenuButton
               icon={FiMail}
               label="Quotes Mailbox"
-              onClick={() => navigate({ to: "/quotes-mailbox" })}
+              onClick={() => handleMenuClick("Quotes Mailbox", "/quotes-mailbox")}
             />
             <MenuButton
               icon={FiFileText}
               label="Illustration History"
-              onClick={() => navigate({ to: "/illustration-history" })}
+              onClick={() => handleMenuClick("Illustration History", "/illustration-history")}
             />
           </div>
         </div>
       </div>
       <UpdateModal
         isOpen={showUpdateModal}
-        onClose={() => setShowUpdateModal(false)}
+        onClose={() => {
+          analytics.trackClick('update_modal', 'close', 'modal');
+          analytics.trackEvent('update_modal_closed', {
+            current_version: "1.0.1",
+            new_version: "1.0.22"
+          });
+          setShowUpdateModal(false);
+        }}
         onUpdate={() => {
+          analytics.trackClick('update_modal', 'update_now', 'button');
+          analytics.trackEvent('update_triggered', {
+            current_version: "1.0.1",
+            new_version: "1.0.22"
+          });
           console.log('Update now clicked');
           setShowUpdateModal(false);
           // TODO: Implement actual update logic

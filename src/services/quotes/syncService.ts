@@ -3,9 +3,9 @@
  * Service for synchronizing quotes with backend
  */
 
-import { pdfQueueService } from '../queues/pdfQueueService';
+import { pdfQueueService } from './pdfQueueService';
 import { quickQuoteQueueService } from './quickQuoteQueueService';
-import type { QuickQuoteQueueItem } from '../queues/types';
+import type { QuickQuoteQueueItem } from '../../types/quotes';
 import { quoteService } from './quoteService';
 import QuotesHttpService from './httpService';
 import { getApiBaseUrl } from '../../config/api';
@@ -50,7 +50,10 @@ class SyncService {
 
       // Clean and normalize PDF path
       let cleanPath = item.pdf_path.replace(/^file:\/\//, '');
-      if (!cleanPath.startsWith('/')) {
+      // On Windows, paths start with drive letter (e.g., C:\), not /
+      // Only add / prefix for Unix-like paths (not Windows paths)
+      const isWindowsPath = /^[A-Za-z]:[\\/]/.test(cleanPath);
+      if (!isWindowsPath && !cleanPath.startsWith('/')) {
         cleanPath = `/${cleanPath}`;
       }
 
@@ -61,7 +64,8 @@ class SyncService {
       }
 
       const baseURL = getApiBaseUrl();
-      const fileName = item.pdf_path.split('/').pop() || 'quote.pdf';
+      // Extract filename - handle both Windows (\) and Unix (/) path separators
+      const fileName = item.pdf_path.split(/[/\\]/).pop() || 'quote.pdf';
 
       // For web version, we need to read the file and create FormData
       // Check if we're in Electron
@@ -138,7 +142,7 @@ class SyncService {
       return false;
     }
 
-    // Проверяем Electron и онлайн статус
+    // Check Electron and online status
     const isElectron = this.isElectronEnvironment();
     if (!isElectron || !navigator.onLine) {
       return false;
@@ -219,13 +223,13 @@ class SyncService {
       return;
     }
 
-    // В браузере не синхронизируем - только в Electron
+    // In browser we don't sync - only in Electron
     const isElectron = this.isElectronEnvironment();
     if (!isElectron) {
       return;
     }
 
-    // Если офлайн - не делаем запросы
+    // If offline - don't make requests
     if (!navigator.onLine) {
       return;
     }
@@ -288,13 +292,13 @@ class SyncService {
       return;
     }
 
-    // В браузере не синхронизируем - только в Electron
+    // In browser we don't sync - only in Electron
     const isElectron = this.isElectronEnvironment();
     if (!isElectron) {
       return;
     }
 
-    // Если офлайн - не делаем запросы
+    // If offline - don't make requests
     if (!navigator.onLine) {
       return;
     }
@@ -706,12 +710,8 @@ class SyncService {
               companyLogoUri = '/aml_brand_logo.jpg';
             }
 
-            const generatedPdfPath = await pdfService.generatePdf({
-              quote: { 
-                ...quoteData, 
-                id: localQuoteId,
-                faceAmount: quoteData.faceAmount || 0,
-              },
+            const generatedPath = await pdfService.generatePdf({
+              quote: { ...quoteData, id: localQuoteId, faceAmount: quoteData.faceAmount || 0 },
               agent: agent || undefined,
               recipientEmail: quickQuote.insuredEmail ? quickQuote.insuredEmail : 'unknown@example.com',
               insuredFirstName: quickQuote.insuredFirstName || undefined,
@@ -719,12 +719,10 @@ class SyncService {
               companyLogoUri: companyLogoUri,
               deterministicPath: deterministicFilePath,
             });
-            
-            if (!generatedPdfPath) {
+            if (!generatedPath) {
               throw new Error('Failed to generate PDF');
             }
-            
-            pdfPath = generatedPdfPath;
+            pdfPath = generatedPath;
             console.log(`[SyncService] Generated PDF for quote ${backendId}: ${pdfPath}`);
           } catch (error) {
             console.error(`[SyncService] Error generating PDF for quote ${backendId}:`, error);
@@ -913,23 +911,23 @@ class SyncService {
 
   /**
    * Syncs both PDFs and Quick Quotes, including deleted items and backend sync
-   * В браузере ничего не синхронизируем - только в Electron
+   * In browser we don't sync anything - only in Electron
    */
   async syncAll(): Promise<void> {
-    // Проверяем Electron и онлайн статус
+    // Check Electron and online status
     const isElectron = this.isElectronEnvironment();
     
     if (!isElectron) {
-      // В браузере вообще ничего не делаем - CORS блокирует все запросы
+      // In browser we don't do anything - CORS blocks all requests
       return;
     }
 
-    // Если офлайн - не делаем запросы
+    // If offline - don't make requests
     if (!navigator.onLine) {
       return;
     }
 
-    // В Electron синхронизируем все
+    // In Electron we sync everything
     await Promise.all([
       this.syncPendingQuickQuotes(),
       this.syncDeletedQuickQuotes(),

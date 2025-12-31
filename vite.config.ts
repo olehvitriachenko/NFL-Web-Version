@@ -17,10 +17,10 @@ export default defineConfig({
   plugins: [
     TanStackRouterVite(),
     react(),
-    VitePWA({
+    // Полностью отключаем VitePWA для Electron build
+    process.env.VITE_BUILD_TARGET !== 'electron' && VitePWA({
       registerType: "autoUpdate",
-      // Вимкнути Service Worker для Electron (file:// протокол не підтримує Service Worker)
-      // Service Worker буде вимкнено в runtime в main.tsx для file:// протоколу
+      injectRegister: "auto",
       includeAssets: ["favicon.ico", "vite.svg"],
       manifest: {
         name: "NationalFarmLife",
@@ -77,5 +77,5 @@ export default defineConfig({
         type: "module",
       },
     }),
-  ],
+  ].filter(Boolean), // Удаляем false значения
 });

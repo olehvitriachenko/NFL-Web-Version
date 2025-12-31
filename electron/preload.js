@@ -2,6 +2,20 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electron', {
+    // OAuth callback listener
+    onOAuthCallback: (callback) => {
+        // Register listener
+        const handler = (_event, data) => {
+            callback(data);
+        };
+        ipcRenderer.on('oauth-callback', handler);
+        // Request pending callback immediately after registration
+        ipcRenderer.send('oauth-callback-ready');
+        // Return cleanup function
+        return () => {
+            ipcRenderer.removeListener('oauth-callback', handler);
+        };
+    },
     db: {
         saveAgent: (agent) => ipcRenderer.invoke('db:saveAgent', agent),
         getAllAgents: () => ipcRenderer.invoke('db:getAllAgents'),
@@ -53,6 +67,7 @@ contextBridge.exposeInMainWorld('electron', {
         openFile: (filePath) => ipcRenderer.invoke('pdf:openFile', filePath),
         readFile: (filePath) => ipcRenderer.invoke('pdf:readFile', filePath),
         fileExists: (filePath) => ipcRenderer.invoke('pdf:fileExists', filePath),
+        convertImageToBase64: (imagePath) => ipcRenderer.invoke('pdf:convertImageToBase64', imagePath),
     },
     app: {
         getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),

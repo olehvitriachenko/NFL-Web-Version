@@ -5,6 +5,7 @@ import { authStorage } from '../services/auth/authStorage';
 import { syncService } from '../services/quotes/syncService';
 import { ratesService } from '../services/rates/ratesService';
 import { isOnline } from '../utils/cache';
+import { AnalyticsProvider } from '../components/AnalyticsProvider';
 
 // Функція для нормалізації шляху - витягує правильний шлях з Windows шляху
 const normalizeRouterPath = (path: string): string => {
@@ -28,6 +29,16 @@ export const Route = createRootRoute({
     const router = useRouter();
     const isElectron = typeof window !== "undefined" && window.location.protocol === "file:";
 
+    // Log all path changes
+    useEffect(() => {
+      console.log('[Root] 📍 Path changed:', {
+        pathname: router.state.location.pathname,
+        search: router.state.location.search,
+        hash: router.state.location.hash,
+        href: router.state.location.href
+      });
+    }, [router.state.location.pathname, router.state.location.search, router.state.location.hash]);
+
     // Check authentication on path change
     useEffect(() => {
       const currentPath = router.state.location.pathname;
@@ -36,7 +47,7 @@ export const Route = createRootRoute({
 
       // If user is on login page and has valid token, redirect to home
       if (currentPath === '/' && hasValidToken) {
-        console.log('[Root] User has valid token, redirecting to home');
+        console.log('[Root] 🔀 User has valid token, redirecting to home');
         router.navigate({ to: '/home' });
         return;
       }
@@ -48,7 +59,7 @@ export const Route = createRootRoute({
 
       // If user is on protected page and doesn't have valid token, redirect to login
       if (!hasValidToken) {
-        console.log('[Root] No valid refresh token, redirecting to login');
+        console.log('[Root] 🔀 No valid refresh token, redirecting to login');
         router.navigate({ to: '/' });
       }
     }, [router.state.location.pathname, router]);
@@ -207,10 +218,39 @@ export const Route = createRootRoute({
       };
     }, [router, isElectron]);
 
+    // Для Electron: слушаем OAuth callback от main process и навигируем на callback страницу
+    useEffect(() => {
+      if (!isElectron) return;
+
+      const electron = (window as any).electron;
+      if (!electron || !electron.onOAuthCallback) return;
+
+      const cleanup = electron.onOAuthCallback((data: { code?: string; state?: string; error?: string; errorDescription?: string }) => {
+        console.log('[Root] 🔀 OAuth callback received via protocol, navigating to callback page...');
+        console.log('[Root] OAuth data:', data);
+        
+        // Навигируем на callback страницу, если мы не на ней
+        const currentPath = router.state.location.pathname;
+        if (currentPath !== '/oauth-callback') {
+          console.log('[Root] 🔀 Navigating from', currentPath, 'to /oauth-callback');
+          router.navigate({ 
+            to: '/oauth-callback',
+            search: {} as any, // Search params are optional for this route
+          });
+        } else {
+          console.log('[Root] Already on /oauth-callback, skipping navigation');
+        }
+      });
+
+      return cleanup;
+    }, [router, isElectron]);
+
     return (
-      <div>
-        <Outlet />
-      </div>
+      <AnalyticsProvider>
+        <div>
+          <Outlet />
+        </div>
+      </AnalyticsProvider>
     );
   },
 });

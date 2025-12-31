@@ -30,29 +30,32 @@ export const getClientId = (): string => {
 };
 
 /**
+ * Check if running in Electron
+ */
+const isElectron = (): boolean => {
+  return typeof window !== 'undefined' && 
+         typeof (window as any).electron !== 'undefined';
+};
+
+/**
  * Get callback URI based on current environment
- * For dev: http://localhost:5173/oauth-callback
- * For Electron: use relative path /oauth-callback (WAF blocks file:// protocol)
- * For prod web: uses environment variable or constructs from window location
+ * For dev: http://localhost:5173/oauth/callback
+ * For Electron production: nfl-app://oauth-callback
+ * For web production: uses environment variable or constructs from window location
  */
 export const getCallbackUri = (): string => {
-  // Check if we're in Electron environment (file:// protocol)
-  const isElectron =
-    typeof window !== "undefined" &&
-    (window.location.protocol === "file:" || (window as any).electron);
-
-  if (isElectron) {
-    // For Electron, use relative path to avoid WAF blocking file:// protocol
-    // The OAuth server should accept relative paths or we need to configure it
-    return "/oauth-callback";
-  }
-
   if (import.meta.env.DEV) {
     // Development: use localhost
     return "http://localhost:5173/oauth-callback";
   }
-
-  // Production: use environment variable or construct from window location
+  
+  // Check if running in Electron
+  if (isElectron()) {
+    // Electron production: use custom protocol
+    return 'nfl-app://oauth-callback';
+  }
+  
+  // Web production: use environment variable or construct from window location
   const prodCallback = import.meta.env.VITE_OAUTH_CALLBACK_URL;
   if (prodCallback) {
     return prodCallback;

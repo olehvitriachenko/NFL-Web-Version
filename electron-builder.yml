@@ -26,9 +26,14 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: build/icon.png  # Використовуємо PNG замість ICO через помилку формату
+  icon: build/icon.png  # Используем PNG, так как icon.ico на самом деле Mac icns
   requestedExecutionLevel: asInvoker
   artifactName: ${productName}-Setup-${version}.${ext}
+  # Register custom protocol for OAuth callback
+  protocols:
+    - name: NFL OAuth Protocol
+      schemes:
+        - nfl-app
   # Якщо іконка відсутня, electron-builder створить дефолтну
 
 nsis:
@@ -52,6 +57,12 @@ mac:
   icon: build/icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
+  # Register custom protocol for OAuth callback
+  extendInfo:
+    CFBundleURLTypes:
+      - CFBundleURLName: com.nfl.webapp.oauth
+        CFBundleURLSchemes:
+          - nfl-app
 
 linux:
   target:

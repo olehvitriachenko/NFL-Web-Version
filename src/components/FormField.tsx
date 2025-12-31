@@ -6,6 +6,7 @@ interface FormFieldProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
   required?: boolean;
   error?: string;
 }
@@ -18,6 +19,7 @@ export const FormField = ({
   value,
   onChange,
   onBlur,
+  onFocus,
   error,
 }: FormFieldProps) => {
   return (
@@ -36,6 +38,7 @@ export const FormField = ({
         value={value}
         onChange={onChange}
         onBlur={onBlur}
+        onFocus={onFocus}
         style={{ borderRadius: 10 }}
         className={`w-full px-4 py-3 text-base text-[#000000] bg-white border transition-all focus:outline-none focus:border-[#0D175C] focus:ring-4 focus:ring-[#0D175C]/10 ${
           error

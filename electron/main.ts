@@ -15,6 +15,12 @@ const __dirname = dirname(__filename);
 const database = new SQLiteDatabase();
 const ratesDatabase = new RatesDatabase();
 
+// Store main window reference for OAuth callback
+let mainWindow: BrowserWindow | null = null;
+
+// Store pending OAuth callback data until page is ready
+let pendingOAuthCallback: { code?: string; state?: string; error?: string; errorDescription?: string } | null = null;
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -31,18 +37,210 @@ function createWindow() {
     },
   });
 
+  // Store main window reference
+  mainWindow = win;
+
+  // Log all navigation events
+  win.webContents.on('will-navigate', (_event, navigationUrl) => {
+    console.log('[Main] 🔗 will-navigate:', navigationUrl);
+  });
+
+  win.webContents.on('did-navigate', (_event, url) => {
+    console.log('[Main] ✅ did-navigate:', url);
+  });
+
+  win.webContents.on('did-navigate-in-page', (_event, url, isMainFrame) => {
+    console.log('[Main] 🔄 did-navigate-in-page:', url, '(isMainFrame:', isMainFrame + ')');
+  });
+
+  win.webContents.on('did-start-navigation', (_event, url, isInPlace, isMainFrame) => {
+    console.log('[Main] 🚀 did-start-navigation:', url, '(isInPlace:', isInPlace + ', isMainFrame:', isMainFrame + ')');
+  });
+
+  win.webContents.on('did-frame-navigate', (_event, url, httpResponseCode, httpStatusText, isMainFrame) => {
+    console.log('[Main] 📍 did-frame-navigate:', url, '(code:', httpResponseCode + ', status:', httpStatusText + ', isMainFrame:', isMainFrame + ')');
+  });
+
+  // Log redirects
+  win.webContents.on('did-redirect-navigation', (_event, url, isInPlace, isMainFrame) => {
+    console.log('[Main] 🔀 did-redirect-navigation:', url, '(isInPlace:', isInPlace + ', isMainFrame:', isMainFrame + ')');
+  });
+
+  // Log loadURL calls
+  const originalLoadURL = win.webContents.loadURL.bind(win.webContents);
+  win.webContents.loadURL = function(url: string, options?: any) {
+    console.log('[Main] 📥 loadURL called:', url, options ? '(options: ' + JSON.stringify(options) + ')' : '');
+    return originalLoadURL(url, options);
+  };
+
+  // Log loadFile calls
+  const originalLoadFile = win.loadFile.bind(win);
+  win.loadFile = function(filePath: string, options?: any) {
+    console.log('[Main] 📁 loadFile called:', filePath, options ? '(options: ' + JSON.stringify(options) + ')' : '');
+    return originalLoadFile(filePath, options);
+  };
+
   // Load the app
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   if (isDev) {
+    console.log('[Main] 📥 Loading dev URL: http://localhost:5173');
     win.loadURL('http://localhost:5173');
     win.webContents.openDevTools();
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    const htmlPath = path.join(__dirname, '../dist/index.html');
+    console.log('[Main] 📁 Loading production file:', htmlPath);
+    win.loadFile(htmlPath);
+  }
+
+  return win;
+}
+
+// Register custom protocol for OAuth callback
+const PROTOCOL_NAME = 'nfl-app';
+
+// Register the protocol handler
+function registerProtocol() {
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(PROTOCOL_NAME, process.execPath, [path.resolve(process.argv[1])]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient(PROTOCOL_NAME);
+  }
+}
+
+// Handle protocol URL (OAuth callback)
+function handleProtocolUrl(url: string) {
+  console.log('[Main] Protocol URL received:', url);
+  
+  // Parse the URL to extract OAuth parameters
+  try {
+    const urlObj = new URL(url);
+    const code = urlObj.searchParams.get('code');
+    const state = urlObj.searchParams.get('state');
+    const error = urlObj.searchParams.get('error');
+    const errorDescription = urlObj.searchParams.get('error_description');
+
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      console.warn('[Main] Main window not available, creating new window...');
+      createWindow();
+      // Wait a bit for window to be ready
+      setTimeout(() => {
+        handleProtocolUrl(url);
+      }, 1000);
+      return;
+    }
+
+    // Focus the window first
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.focus();
+
+    // Prepare OAuth callback data
+    const callbackData: { code?: string; state?: string; error?: string; errorDescription?: string } = {};
+    if (error) {
+      console.error('[Main] OAuth error:', error, errorDescription);
+      callbackData.error = error;
+      callbackData.errorDescription = errorDescription || undefined;
+    } else if (code && state) {
+      console.log('[Main] OAuth callback received, code:', code.substring(0, 20) + '...');
+      callbackData.code = code;
+      callbackData.state = state;
+    } else {
+      console.warn('[Main] OAuth callback missing code or state');
+      return;
+    }
+
+    // Store pending callback
+    pendingOAuthCallback = callbackData;
+
+    // Navigate to callback page with parameters in hash
+    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+    
+    // Build query string from callback data
+    const params = new URLSearchParams();
+    if (callbackData.code) params.set('code', callbackData.code);
+    if (callbackData.state) params.set('state', callbackData.state);
+    if (callbackData.error) params.set('error', callbackData.error);
+    if (callbackData.errorDescription) params.set('error_description', callbackData.errorDescription);
+    
+    const queryString = params.toString();
+    const callbackUrl = isDev 
+      ? `http://localhost:5173/oauth-callback?${queryString}`
+      : `file://${path.join(__dirname, '../dist/index.html')}#/oauth-callback?${queryString}`;
+    
+    console.log('[Main] Loading callback page with params:', callbackUrl);
+    console.log('[Main] Callback data:', { 
+      code: callbackData.code ? callbackData.code.substring(0, 20) + '...' : undefined,
+      state: callbackData.state,
+      error: callbackData.error 
+    });
+    
+    // Send data via IPC multiple times to ensure it's received
+    const sendDataMultipleTimes = () => {
+      if (!pendingOAuthCallback || !mainWindow || mainWindow.isDestroyed()) {
+        return;
+      }
+      
+      console.log('[Main] Page loaded, sending callback data via IPC (multiple attempts)...');
+      // Send immediately
+      mainWindow.webContents.send('oauth-callback', pendingOAuthCallback);
+      console.log('[Main] ✅ First IPC send completed');
+      
+      // Send again after 500ms (in case listener wasn't ready)
+      setTimeout(() => {
+        if (pendingOAuthCallback && mainWindow && !mainWindow.isDestroyed()) {
+          console.log('[Main] Sending callback data again (500ms delay)...');
+          mainWindow.webContents.send('oauth-callback', pendingOAuthCallback);
+          console.log('[Main] ✅ Second IPC send completed');
+        }
+      }, 500);
+      
+      // Send again after 1.5s (final attempt)
+      setTimeout(() => {
+        if (pendingOAuthCallback && mainWindow && !mainWindow.isDestroyed()) {
+          console.log('[Main] Sending callback data again (1.5s delay)...');
+          mainWindow.webContents.send('oauth-callback', pendingOAuthCallback);
+          console.log('[Main] ✅ Third IPC send completed');
+        }
+      }, 1500);
+    };
+    
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.once('did-finish-load', sendDataMultipleTimes);
+    }
+    
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.loadURL(callbackUrl).catch((err) => {
+        console.error('[Main] Error loading callback page:', err);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.removeListener('did-finish-load', sendDataMultipleTimes);
+        }
+        // Fallback: send data via IPC immediately
+        if (pendingOAuthCallback && mainWindow && !mainWindow.isDestroyed()) {
+          console.log('[Main] Sending callback data via IPC as fallback...');
+          mainWindow.webContents.send('oauth-callback', pendingOAuthCallback);
+          pendingOAuthCallback = null;
+        }
+      });
+    }
+  } catch (error) {
+    console.error('[Main] Error parsing protocol URL:', error);
   }
 }
 
 // App event handlers
 app.whenReady().then(() => {
+  // Register custom protocol
+  registerProtocol();
+
+  // Handle protocol URL on macOS (when app is already running)
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    handleProtocolUrl(url);
+  });
+
   database.init();
   try {
     ratesDatabase.init();
@@ -57,6 +255,40 @@ app.whenReady().then(() => {
     }
   });
 });
+
+// Handle protocol URL on Windows/Linux (when app is launched via protocol)
+if (process.platform === 'win32' || process.platform === 'linux') {
+  const gotTheLock = app.requestSingleInstanceLock();
+
+  if (!gotTheLock) {
+    app.quit();
+  } else {
+    app.on('second-instance', (_event, commandLine) => {
+      // Someone tried to run a second instance, focus our window instead
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore();
+        }
+        mainWindow.focus();
+      }
+
+      // Check if protocol URL is in command line
+      const protocolUrl = commandLine.find(arg => arg.startsWith(`${PROTOCOL_NAME}://`));
+      if (protocolUrl) {
+        handleProtocolUrl(protocolUrl);
+      }
+    });
+  }
+} else {
+  // macOS: handle protocol URL when app is launched
+  const protocolUrl = process.argv.find(arg => arg.startsWith(`${PROTOCOL_NAME}://`));
+  if (protocolUrl) {
+    // Delay to ensure app is ready
+    setTimeout(() => {
+      handleProtocolUrl(protocolUrl);
+    }, 1000);
+  }
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -598,6 +830,64 @@ ipcMain.handle('pdf:fileExists', async (_, filePath: string) => {
   }
 });
 
+// IPC handler for converting image to base64
+ipcMain.handle('pdf:convertImageToBase64', async (_, imagePath: string) => {
+  try {
+    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+    
+    // Remove leading slash from imagePath
+    const cleanImagePath = imagePath.startsWith('/') 
+      ? imagePath.substring(1) 
+      : imagePath;
+    
+    // In dev mode, files are in public folder, in production they're in dist folder
+    const baseDir = isDev ? 'public' : 'dist';
+    
+    // Get app path and resolve to project root
+    const appPath = app.getAppPath();
+    // If we're in electron/ directory, go up one level to project root
+    const projectRoot = appPath.endsWith('electron') 
+      ? path.join(appPath, '..') 
+      : appPath;
+    
+    const fullImagePath = path.join(projectRoot, baseDir, cleanImagePath);
+    
+    console.log(`[Main] Converting image to base64: ${fullImagePath}`);
+    
+    // Check if file exists
+    if (!existsSync(fullImagePath)) {
+      console.warn(`[Main] Image file not found: ${fullImagePath}`);
+      return { success: false, error: 'File not found' };
+    }
+    
+    // Read file
+    const fileBuffer = await readFile(fullImagePath);
+    
+    // Convert to base64
+    const base64 = fileBuffer.toString('base64');
+    
+    // Determine MIME type from file extension
+    const extension = cleanImagePath.split('.').pop()?.toLowerCase();
+    let mimeType = 'image/png'; // default
+    if (extension === 'jpg' || extension === 'jpeg') {
+      mimeType = 'image/jpeg';
+    } else if (extension === 'png') {
+      mimeType = 'image/png';
+    } else if (extension === 'gif') {
+      mimeType = 'image/gif';
+    } else if (extension === 'webp') {
+      mimeType = 'image/webp';
+    }
+    
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+    
+    return { success: true, data: dataUrl };
+  } catch (error) {
+    console.error('Error converting image to base64:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
 // IPC handler for getting userData directory path
 console.log('[Main] Registering app:getUserDataPath handler at module load time');
 ipcMain.handle('app:getUserDataPath', async () => {
@@ -623,6 +913,33 @@ ipcMain.handle('app:getAppPath', async () => {
   } catch (error) {
     console.error('[Main] Error getting app path:', error);
     return { success: false, error: String(error) };
+  }
+});
+
+// IPC handler for OAuth callback ready - send pending callback data
+ipcMain.on('oauth-callback-ready', () => {
+  console.log('[Main] ===== OAuth callback ready signal received =====');
+  console.log('[Main] Pending callback data:', pendingOAuthCallback);
+  console.log('[Main] Main window exists:', !!mainWindow);
+  console.log('[Main] Main window destroyed:', mainWindow?.isDestroyed());
+  
+  if (pendingOAuthCallback && mainWindow && !mainWindow.isDestroyed()) {
+    console.log('[Main] Sending pending OAuth callback data to renderer...');
+    console.log('[Main] Data being sent:', {
+      code: pendingOAuthCallback.code ? pendingOAuthCallback.code.substring(0, 20) + '...' : undefined,
+      state: pendingOAuthCallback.state,
+      error: pendingOAuthCallback.error
+    });
+    // Send immediately
+    mainWindow.webContents.send('oauth-callback', pendingOAuthCallback);
+    console.log('[Main] ✅ Callback data sent via IPC');
+    pendingOAuthCallback = null; // Clear after sending
+  } else {
+    console.warn('[Main] ❌ Cannot send callback data:', {
+      hasPendingData: !!pendingOAuthCallback,
+      hasMainWindow: !!mainWindow,
+      isDestroyed: mainWindow?.isDestroyed()
+    });
   }
 });
 

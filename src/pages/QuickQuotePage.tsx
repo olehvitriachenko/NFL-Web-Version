@@ -3,12 +3,14 @@ import { PageHeader } from '../components/PageHeader';
 import { navigateBack } from '../utils/navigation';
 import { BORDER } from '../constants/theme';
 import { useQuickFormStore } from '../stores/QuickFormStore';
+import { useAnalytics } from '../hooks/useAnalytics';
 import nflLogo from "/Company/company-a-logo.png";
 import amlLogo from "/Company/company-b-logo.png";
 
 export const QuickQuotePage = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  const analytics = useAnalytics();
   const { updateForm } = useQuickFormStore();
 
   const handleBack = () => {
